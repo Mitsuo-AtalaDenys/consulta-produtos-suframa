@@ -3,25 +3,31 @@
 """
 dashboard_suframa.py
 ====================
-App de consulta da base completa de Insumos da Suframa
+App de consulta da base completa de Produtos da Suframa
 (1.768 produtos x tipos, com NCM e descricao da NCM).
 
-Le o arquivo suframa_insumos.parquet (na mesma pasta) gerado pelo
-coletar_suframa.py. Roda local com:  streamlit run dashboard_suframa.py
-e no Streamlit Cloud lendo o parquet do repositorio.
-
-Senha opcional: defina em Settings -> Secrets do app:
-    senha = "suaSenha"
-Sem esse segredo, o acesso e livre.
+Identidade visual Atala & Denys: burgundy, bege e tons crus.
 """
 
+from pathlib import Path
+import base64
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="Consulta de Insumos · SUFRAMA",
+# -------- Configuracao da pagina ------------------------------------------
+st.set_page_config(page_title="Consulta de Produtos · Atala & Denys",
                    page_icon="🔎", layout="wide")
 
 ARQUIVO = "suframa_insumos.parquet"
+LOGO = "logo_atala_denys.png"
+
+# -------- Paleta da casa --------------------------------------------------
+BURGUNDY_DARK = "#25171A"
+BURGUNDY = "#3D1E24"
+BURGUNDY_LIGHT = "#6A343E"
+SAND = "#DFD4C4"
+CREAM = "#F3F0EA"
+TEXT_LIGHT = "#F5EFE7"
 
 COLUNAS = {
     "codigo_produto": "Código",
@@ -36,10 +42,114 @@ COLUNAS = {
 }
 
 
-# ---------------------------------------------------------------------------
+# -------- Estilo (CSS) ----------------------------------------------------
+def aplicar_estilo():
+    st.markdown(f"""
+    <style>
+      .stApp {{
+        background: linear-gradient(180deg, {BURGUNDY_DARK} 0%, {BURGUNDY} 100%);
+        color: {TEXT_LIGHT};
+      }}
+      [data-testid="stSidebar"] {{
+        background-color: {BURGUNDY_DARK};
+        border-right: 1px solid {BURGUNDY_LIGHT};
+      }}
+      [data-testid="stSidebar"] * {{ color: {TEXT_LIGHT} !important; }}
+      .ad-header {{
+        background-color: {CREAM};
+        padding: 18px 28px;
+        border-radius: 6px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      }}
+      .ad-header img {{ max-height: 64px; }}
+      .ad-title {{
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 2.2rem;
+        color: {TEXT_LIGHT};
+        margin: 8px 0 4px 0;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }}
+      .ad-subtitle {{
+        color: {SAND};
+        font-size: 0.95rem;
+        margin-bottom: 24px;
+      }}
+      .ad-footer {{
+        margin-top: 48px;
+        padding: 18px 0;
+        border-top: 1px solid {BURGUNDY_LIGHT};
+        color: {SAND};
+        font-size: 0.85rem;
+        text-align: center;
+        letter-spacing: 0.5px;
+      }}
+      .ad-footer strong {{ color: {TEXT_LIGHT}; }}
+      [data-testid="stMetricValue"] {{
+        color: {TEXT_LIGHT} !important;
+        font-family: Georgia, serif;
+      }}
+      [data-testid="stMetricLabel"] {{ color: {SAND} !important; }}
+      .stTextInput > div > div > input {{
+        background-color: {CREAM};
+        color: {BURGUNDY_DARK};
+        border: 1px solid {SAND};
+      }}
+      .stDownloadButton button {{
+        background-color: {SAND};
+        color: {BURGUNDY_DARK};
+        border: none;
+        font-weight: 600;
+      }}
+      .stDownloadButton button:hover {{
+        background-color: {CREAM};
+        color: {BURGUNDY_DARK};
+      }}
+      [data-testid="stDataFrame"] {{
+        background-color: {CREAM};
+        border-radius: 4px;
+      }}
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def renderizar_topo():
+    """Header com a logo da Atala & Denys."""
+    try:
+        with open(LOGO, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        st.markdown(
+            f'<div class="ad-header">'
+            f'<img src="data:image/png;base64,{b64}" alt="Atala & Denys">'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    except FileNotFoundError:
+        # Sem a logo no disco, segue sem quebrar
+        st.markdown(
+            f'<div class="ad-header" style="justify-content:center;">'
+            f'<span style="font-family:Georgia,serif;font-size:1.4rem;'
+            f'color:{BURGUNDY};letter-spacing:3px;">ATALA &amp; DENYS</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+
+def renderizar_rodape():
+    st.markdown(
+        '<div class="ad-footer">'
+        'Elaborado por <strong>Mitsuo Matsui</strong> · '
+        'Atala &amp; Denys Consultoria e Projetos Econômicos'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+
+# -------- Senha -----------------------------------------------------------
 def checar_senha():
-    """Bloqueia o app com senha se houver 'senha' nos Secrets. Caso contrario,
-    o acesso e livre."""
     try:
         senha = st.secrets.get("senha", None)
     except Exception:
@@ -56,15 +166,14 @@ def checar_senha():
         st.stop()
 
 
+# -------- Dados -----------------------------------------------------------
 @st.cache_data(show_spinner="Carregando a base...")
 def carregar():
     df = pd.read_parquet(ARQUIVO)
-    # garante que as colunas esperadas existam
     for c in COLUNAS:
         if c not in df.columns:
             df[c] = ""
     df = df.fillna("")
-    # coluna de busca: usa a existente ou monta uma na hora
     if "_busca" not in df.columns:
         df["_busca"] = df[list(COLUNAS)].astype(str).agg(" | ".join, axis=1)
     df["_busca_low"] = df["_busca"].str.lower()
@@ -83,18 +192,23 @@ def filtrar(df, termo, unidades, so_ncm):
     return out
 
 
-# ---------------------------------------------------------------------------
+# -------- Aplicacao -------------------------------------------------------
+aplicar_estilo()
 checar_senha()
 df = carregar()
 
-st.title("🔎 Consulta de Insumos · SUFRAMA")
-st.caption(
-    f"Base completa: {df['codigo_produto'].nunique():,} produtos · "
-    f"{len(df):,} tipos · {(df['ncm'].str.len() > 0).sum():,} com NCM"
-    .replace(",", ".")
+renderizar_topo()
+
+st.markdown('<div class="ad-title">🔎 Consulta de Produtos · SUFRAMA</div>',
+            unsafe_allow_html=True)
+st.markdown(
+    f'<div class="ad-subtitle">Base completa: '
+    f'{df["codigo_produto"].nunique():,} produtos · '
+    f'{len(df):,} tipos · '
+    f'{(df["ncm"].str.len() > 0).sum():,} com NCM</div>'.replace(",", "."),
+    unsafe_allow_html=True,
 )
 
-# ----- barra lateral: filtros -----
 with st.sidebar:
     st.header("Filtros")
     unidades = st.multiselect("Unidade", sorted(u for u in df["unidade"].unique() if u))
@@ -104,7 +218,6 @@ with st.sidebar:
                "no tipo, na NCM e na base legal. Pode digitar várias "
                "palavras (ex.: *parafuso ferro*).")
 
-# ----- busca principal -----
 termo = st.text_input("Buscar produto, tipo, NCM ou base legal",
                       placeholder="ex.: parafuso, porca, 8473, condicionador de ar...")
 
@@ -140,3 +253,5 @@ else:
     csv = tabela.to_csv(index=False).encode("utf-8-sig")
     st.download_button("⬇️ Baixar resultado (CSV)", data=csv,
                        file_name="consulta_suframa.csv", mime="text/csv")
+
+renderizar_rodape()
