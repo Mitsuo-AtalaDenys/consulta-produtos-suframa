@@ -19,7 +19,14 @@ st.set_page_config(page_title="Consulta de Produtos · Atala & Denys",
                    page_icon="🔎", layout="wide")
 
 ARQUIVO = "suframa_insumos.parquet"
-LOGO = "logo_atala_denys.png"
+LOGO_CANDIDATOS = [
+    "logo_atala_denys.png",
+    "logo_atala_denys.jpeg",
+    "logo_atala_denys.jpg",
+    "logo_atala_denys.PNG",
+    "logo_atala_denys.JPEG",
+    "logo_atala_denys.JPG",
+]
 
 # -------- Paleta da casa --------------------------------------------------
 BURGUNDY_DARK = "#25171A"
@@ -168,18 +175,32 @@ def aplicar_estilo():
     """, unsafe_allow_html=True)
 
 
+def _localizar_logo():
+    """Procura o arquivo da logo entre extensoes comuns (.png, .jpg, .jpeg,
+    maiusculas ou minusculas), pois o nome exato pode variar dependendo de
+    como o arquivo foi salvo/exportado."""
+    for nome in LOGO_CANDIDATOS:
+        caminho = Path(nome)
+        if caminho.is_file():
+            ext = caminho.suffix.lower().lstrip(".")
+            mime = "jpeg" if ext in ("jpg", "jpeg") else "png"
+            return caminho, mime
+    return None, None
+
+
 def renderizar_topo():
     """Header com a logo da Atala & Denys."""
-    try:
-        with open(LOGO, "rb") as f:
+    caminho, mime = _localizar_logo()
+    if caminho is not None:
+        with open(caminho, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
         st.markdown(
             f'<div class="ad-header">'
-            f'<img src="data:image/png;base64,{b64}" alt="Atala & Denys">'
+            f'<img src="data:image/{mime};base64,{b64}" alt="Atala & Denys">'
             f'</div>',
             unsafe_allow_html=True,
         )
-    except FileNotFoundError:
+    else:
         # Sem a logo no disco, segue sem quebrar
         st.markdown(
             f'<div class="ad-header" style="justify-content:center;">'
