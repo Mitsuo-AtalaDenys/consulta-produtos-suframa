@@ -55,16 +55,62 @@ def aplicar_estilo():
         border-right: 1px solid {BURGUNDY_LIGHT};
       }}
       [data-testid="stSidebar"] * {{ color: {TEXT_LIGHT} !important; }}
+
+      /* Campo de senha (sidebar) - fundo claro, texto escuro, sempre legivel */
+      [data-testid="stSidebar"] .stTextInput input {{
+        background-color: {CREAM} !important;
+        color: {BURGUNDY_DARK} !important;
+        border: 1px solid {SAND} !important;
+        -webkit-text-fill-color: {BURGUNDY_DARK} !important;
+        caret-color: {BURGUNDY_DARK} !important;
+      }}
+      [data-testid="stSidebar"] .stTextInput input::placeholder {{
+        color: {BURGUNDY_LIGHT} !important;
+        opacity: 0.7;
+      }}
+      /* Botao de olho (mostrar/ocultar senha) */
+      [data-testid="stSidebar"] .stTextInput button svg {{
+        fill: {BURGUNDY_DARK} !important;
+      }}
+
+      /* Multiselect "Unidade" (sidebar) - caixa e texto digitado */
+      [data-testid="stSidebar"] [data-baseweb="select"] > div {{
+        background-color: {CREAM} !important;
+        border: 1px solid {SAND} !important;
+      }}
+      [data-testid="stSidebar"] [data-baseweb="select"] * {{
+        color: {BURGUNDY_DARK} !important;
+        -webkit-text-fill-color: {BURGUNDY_DARK} !important;
+      }}
+      [data-testid="stSidebar"] [data-baseweb="select"] input {{
+        caret-color: {BURGUNDY_DARK} !important;
+      }}
+      /* Lista de opcoes do multiselect (popover, fora da sidebar) */
+      [data-baseweb="popover"] [data-baseweb="menu"] {{
+        background-color: {CREAM} !important;
+      }}
+      [data-baseweb="popover"] [data-baseweb="menu"] * {{
+        color: {BURGUNDY_DARK} !important;
+      }}
+      /* Checkbox "Somente itens com NCM" */
+      [data-testid="stSidebar"] [data-testid="stCheckbox"] label span {{
+        color: {TEXT_LIGHT} !important;
+      }}
       .ad-header {{
         background-color: {CREAM};
-        padding: 18px 28px;
+        padding: 22px 32px;
         border-radius: 6px;
         margin-bottom: 24px;
         display: flex;
         align-items: center;
+        justify-content: flex-start;
         box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       }}
-      .ad-header img {{ max-height: 64px; }}
+      .ad-header img {{
+        max-height: 56px;
+        width: auto;
+        display: block;
+      }}
       .ad-title {{
         font-family: Georgia, 'Times New Roman', serif;
         font-size: 2.2rem;
@@ -97,6 +143,12 @@ def aplicar_estilo():
         background-color: {CREAM};
         color: {BURGUNDY_DARK};
         border: 1px solid {SAND};
+        -webkit-text-fill-color: {BURGUNDY_DARK};
+        caret-color: {BURGUNDY_DARK};
+      }}
+      .stTextInput > div > div > input::placeholder {{
+        color: {BURGUNDY_LIGHT};
+        opacity: 0.65;
       }}
       .stDownloadButton button {{
         background-color: {SAND};
