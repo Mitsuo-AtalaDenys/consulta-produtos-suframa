@@ -37,13 +37,21 @@ Requisitos:
   pip3 install requests beautifulsoup4 lxml pandas pyarrow
 """
 
-import argparse, re, sys, time, sqlite3
+import argparse, re, sys, time, sqlite3, urllib3
 from pathlib import Path
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+
+# ---------------------------------------------------------------------------
+# Desabilita a verificacao SSL para o dominio da SUFRAMA. Necessario em redes
+# corporativas (ex.: DD&L) que fazem inspecao SSL e apresentam certificado
+# proprio, incompativel com a lista padrao do Python. O trafego permanece
+# criptografado; apenas a validacao do certificado nao e feita. Como a SUFRAMA
+# e site publico e nao enviamos dados sensiveis (so leitura), o risco e baixo.
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ---------------------------------------------------------------------------
 ROOT = "https://wwws.suframa.gov.br/"
@@ -67,7 +75,7 @@ DATA_RE = r"\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}"
 def baixar(session, url, tentativas=3, pausa=1.0):
     for i in range(tentativas):
         try:
-            r = session.get(url, headers=HEADERS, timeout=60)
+            r = session.get(url, headers=HEADERS, timeout=60, verify=False)
             r.encoding = ENCODING
             r.raise_for_status()
             return r.text
