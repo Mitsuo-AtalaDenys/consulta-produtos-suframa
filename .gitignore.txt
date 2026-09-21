@@ -1,0 +1,26 @@
+# Ambiente virtual
+venv/
+.venv/
+
+# Arquivos intermediários das coletas.
+# Não vão para o repositório, mas NÃO APAGUE localmente:
+# os arquivos de status/parcial são o que permite retomar uma coleta
+# interrompida e atualizar a base sem refazer tudo do zero.
+dados/_parcial.csv
+dados/_parcial_lips.csv
+dados/_status_lips.csv
+dados/suframa_lips.csv
+dados/_parcial_dou.csv
+dados/dou_suframa.csv
+dados/_parcial_silt.csv
+dados/silt_decretos.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini

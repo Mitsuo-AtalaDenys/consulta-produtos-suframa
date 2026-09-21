@@ -13,6 +13,7 @@ Identidade visual Atala & Denys: burgundy, bege e tons crus.
 
 from pathlib import Path
 import base64
+import re
 import unicodedata
 from io import BytesIO
 
@@ -147,7 +148,7 @@ def aplicar_estilo():
 
       /* Selectbox e radio na area principal */
       [data-testid="stMain"] [data-baseweb="select"] > div {{
-        background-color: {CREAM} !important;
+        background-color: {BURGUNDY_DARK} !important;
         border: 1px solid {SAND} !important;
       }}
       [data-testid="stMain"] [data-baseweb="select"] * {{
@@ -349,6 +350,111 @@ def carregar_lips():
     return df
 
 
+COLUNAS_DOU = {
+    "data_publicacao": "Publicação",
+    "classificacao": "Ato",
+    "tipo_projeto": "Tipo de projeto",
+    "empresa": "Empresa",
+    "codigo_produto": "Cód.",
+    "produto": "Produto",
+    "cnpj": "CNPJ",
+    "numero_ato": "Portaria",
+    "item": "Item",
+    "processo": "Processo",
+    "url": "Link",
+}
+
+COLUNAS_SILT = {
+    "data_decreto": "Data",
+    "classificacao": "Ato",
+    "numero_decreto": "Decreto",
+    "empresa": "Empresa",
+    "produto": "Produto",
+    "ncms": "NCM/SH",
+    "credito_estimulo": "Crédito ICMS",
+    "cnpj": "CNPJ",
+    "codam_reuniao": "CODAM",
+    "url": "Link",
+}
+
+
+@st.cache_data(show_spinner="Carregando os atos do DOU...")
+def carregar_dou():
+    for nome in ("dou_suframa.parquet", "dados/dou_suframa.parquet"):
+        p = Path(nome)
+        if p.is_file():
+            d = pd.read_parquet(p)
+            for c in list(COLUNAS_DOU) + ["ato_de_projeto", "tem_anexo", "texto",
+                                  "texto_item", "item"]:
+                if c not in d.columns:
+                    d[c] = ""
+            for c in d.columns:
+                d[c] = d[c].fillna("").astype(str)
+            d["_dt"] = pd.to_datetime(d["data_publicacao"], format="%d/%m/%Y",
+                                      errors="coerce")
+            # Busca no texto DO ITEM, nao do ato inteiro. Num ato coletivo
+            # todas as linhas compartilham o texto integral, entao buscar
+            # nele faria "motocicleta" devolver tambem os colchoes e vidros
+            # publicados no mesmo documento.
+            campo_texto = "texto_item" if (d["texto_item"] != "").any() else "texto"
+            d["_busca_low"] = montar_busca(
+                d, ["empresa", "cnpj", "produto", "codigo_produto",
+                    "numero_ato", "processo", "titulo", campo_texto]).str.lower()
+            return d
+    return None
+
+
+@st.cache_data(show_spinner="Carregando os decretos do SILT...")
+def carregar_silt():
+    for nome in ("silt_decretos.parquet", "dados/silt_decretos.parquet"):
+        p = Path(nome)
+        if p.is_file():
+            d = pd.read_parquet(p)
+            for c in list(COLUNAS_SILT) + ["texto", "cca", "enquadramento"]:
+                if c not in d.columns:
+                    d[c] = ""
+            for c in d.columns:
+                d[c] = d[c].fillna("").astype(str)
+            d["_dt"] = pd.to_datetime(d["data_decreto"], format="%d/%m/%Y",
+                                      errors="coerce")
+            d["_busca_low"] = montar_busca(
+                d, ["empresa", "cnpj", "produto", "ncms", "numero_decreto",
+                    "cca", "enquadramento"]).str.lower()
+            return d
+    return None
+
+
+def cruzar_com_produtos(df_atos, df_prod):
+    """Traz nome do produto-padrão, tipos e NCMs da base da SUFRAMA.
+
+    O código do produto no ato do DOU é a chave que liga a publicação à
+    base de produtos — é o que transforma uma lista de portarias numa
+    consulta de quem fabrica o quê, com as NCMs de cada tipo.
+    """
+    if df_atos is None or df_prod is None:
+        return df_atos
+
+    base = df_prod.copy()
+    base["_ch"] = base["codigo_produto"].astype(str).str.strip().str.zfill(4)
+
+    nomes = base.drop_duplicates("_ch").set_index("_ch")["produto_nome"].to_dict()
+    tipos = base.groupby("_ch").size().to_dict()
+    ncms = (base.groupby("_ch")["ncm"]
+                .apply(lambda s: ", ".join(sorted({
+                    n.strip() for v in s for n in str(v).split(",") if n.strip()
+                })))
+                .to_dict())
+    unid = base.drop_duplicates("_ch").set_index("_ch")["unidade"].to_dict()
+
+    ch = df_atos["codigo_produto"].astype(str).str.strip().str.zfill(4)
+    df_atos = df_atos.copy()
+    df_atos["produto_padrao"] = ch.map(nomes).fillna("")
+    df_atos["qtd_tipos"] = ch.map(tipos).fillna(0).astype(int)
+    df_atos["ncms_do_produto"] = ch.map(ncms).fillna("")
+    df_atos["unidade_produto"] = ch.map(unid).fillna("")
+    return df_atos
+
+
 def enriquecer_lips(df_lips, df_prod):
     """Preenche o nome do produto na base de insumos cruzando com a base de
     produtos, que é a fonte de verdade para essa informação."""
@@ -407,6 +513,8 @@ checar_senha()
 
 df = carregar()
 df_lips = enriquecer_lips(carregar_lips(), df)
+df_dou = cruzar_com_produtos(carregar_dou(), df)
+df_silt = carregar_silt()
 
 renderizar_topo()
 
@@ -417,14 +525,22 @@ st.markdown(
     f'{milhar(df["codigo_produto"].nunique())} produtos-padrão · '
     f'{milhar(len(df))} tipos'
     + (f' · {milhar(len(df_lips))} insumos na LIPS' if df_lips is not None else "")
+    + (f' · {milhar((df_dou["classificacao"] == "aprovacao").sum())} projetos '
+       f'aprovados no DOU' if df_dou is not None else "")
+    + (f' · {milhar(len(df_silt))} decretos no SILT' if df_silt is not None else "")
     + '</div>',
     unsafe_allow_html=True,
 )
 
-if df_lips is None:
-    abas = st.tabs(["📦  Produtos / Tipos"])
-else:
-    abas = st.tabs(["📦  Produtos / Tipos", "🧪  Insumos por Produto"])
+rotulos = ["📦  Produtos / Tipos SS"]
+if df_lips is not None:
+    rotulos.append("🧪  Insumos por Produto")
+if df_dou is not None:
+    rotulos.append("📜  Projetos aprovados (DOU)")
+if df_silt is not None:
+    rotulos.append("🏛️  Incentivos estaduais (SILT)")
+abas = st.tabs(rotulos)
+IDX = {nome: i for i, nome in enumerate(rotulos)}
 
 
 # =========================================================================
@@ -607,5 +723,221 @@ if df_lips is not None:
                           ".spreadsheetml.sheet"),
                     key="dl_xlsx_lips",
                 )
+
+
+# =========================================================================
+# ABA 3 — Projetos aprovados no DOU
+# =========================================================================
+if df_dou is not None:
+    with abas[IDX["📜  Projetos aprovados (DOU)"]]:
+
+        so_projeto = df_dou[df_dou["ato_de_projeto"] == "SIM"]
+        n_apr = (so_projeto["classificacao"] == "aprovacao").sum()
+        periodo = ""
+        if so_projeto["_dt"].notna().any():
+            periodo = (f'{so_projeto["_dt"].min():%m/%Y} a '
+                       f'{so_projeto["_dt"].max():%m/%Y}')
+        st.markdown(
+            f'<div class="ad-subtitle" style="margin-bottom:14px;">'
+            f'Portarias e Resoluções da SUFRAMA sobre projetos de empresas · '
+            f'{milhar(n_apr)} aprovações · {periodo}</div>',
+            unsafe_allow_html=True,
+        )
+
+        modo_d = st.radio(
+            "Modo de consulta",
+            ["Por empresa ou produto", "Quem fabrica esta NCM", "Linha do tempo"],
+            horizontal=True,
+            key="modo_dou",
+        )
+
+        res_d = so_projeto
+
+        if modo_d == "Por empresa ou produto":
+            termo_d = st.text_input(
+                "Buscar empresa, CNPJ, produto, código ou nº da portaria",
+                placeholder="ex.: flextronics, 0674, 2.709, plástico...",
+                key="busca_dou",
+            )
+            if termo_d.strip():
+                for palavra in termo_d.lower().split():
+                    res_d = res_d[res_d["_busca_low"].str.contains(
+                        palavra, regex=False)]
+
+        elif modo_d == "Quem fabrica esta NCM":
+            st.caption("Informe uma NCM para descobrir quais empresas tiveram "
+                       "projeto aprovado em produtos que a contemplam.")
+            ncm_busca = st.text_input(
+                "NCM (pode ser parcial — 8 dígitos, capítulo ou posição)",
+                placeholder="ex.: 39219019, 3921, 8473",
+                key="ncm_dou",
+            )
+            if ncm_busca.strip():
+                alvo = re.sub(r"\D", "", ncm_busca)
+                res_d = res_d[res_d["ncms_do_produto"].str.replace(
+                    r"\D", "", regex=True).str.contains(alvo, na=False)]
+            else:
+                res_d = res_d.iloc[0:0]
+
+        else:  # Linha do tempo
+            empresas = sorted(e for e in so_projeto["empresa"].unique() if e)
+            sel_emp = st.selectbox(
+                "Empresa", ["— selecione —"] + empresas, key="emp_dou")
+            if sel_emp != "— selecione —":
+                res_d = res_d[res_d["empresa"] == sel_emp].sort_values(
+                    "_dt", ascending=False)
+            else:
+                res_d = res_d.iloc[0:0]
+
+        cf1, cf2 = st.columns([1, 1])
+        with cf1:
+            classes = ["Todos"] + sorted(
+                c for c in so_projeto["classificacao"].unique() if c)
+            sel_cls = st.selectbox("Tipo de ato", classes, key="cls_dou")
+            if sel_cls != "Todos":
+                res_d = res_d[res_d["classificacao"] == sel_cls]
+        with cf2:
+            tipos_p = ["Todos"] + sorted(
+                t for t in so_projeto["tipo_projeto"].unique() if t)
+            sel_tp = st.selectbox("Tipo de projeto", tipos_p, key="tp_dou")
+            if sel_tp != "Todos":
+                res_d = res_d[res_d["tipo_projeto"] == sel_tp]
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Atos", milhar(len(res_d)))
+        m2.metric("Empresas", milhar(res_d["empresa"].replace("", pd.NA).nunique()))
+        m3.metric("Produtos-padrão",
+                  milhar(res_d["codigo_produto"].replace("", pd.NA).nunique()))
+
+        if res_d.empty:
+            if modo_d == "Quem fabrica esta NCM":
+                st.info("Digite uma NCM para ver as empresas aprovadas.")
+            elif modo_d == "Linha do tempo":
+                st.info("Selecione uma empresa para ver o histórico de atos.")
+            else:
+                st.warning("Nenhum ato encontrado com esses critérios.")
+        else:
+            cols_d = list(COLUNAS_DOU) + ["produto_padrao", "ncms_do_produto"]
+            rotulos_d = dict(COLUNAS_DOU)
+            rotulos_d["produto_padrao"] = "Produto-padrão (base SUFRAMA)"
+            rotulos_d["ncms_do_produto"] = "NCMs do produto"
+            tabela_d = res_d[cols_d].rename(columns=rotulos_d)
+
+            st.dataframe(
+                tabela_d, width="stretch", hide_index=True, height=520,
+                column_config={
+                    "Publicação": st.column_config.TextColumn(width="small"),
+                    "Ato": st.column_config.TextColumn(width="small"),
+                    "Empresa": st.column_config.TextColumn(width="large"),
+                    "Cód.": st.column_config.TextColumn(width="small"),
+                    "Link": st.column_config.LinkColumn(
+                        "DOU", display_text="abrir", width="small"),
+                },
+            )
+
+            d1c, d2c = st.columns(2)
+            with d1c:
+                st.download_button(
+                    "⬇️ Baixar resultado (CSV)",
+                    data=tabela_d.to_csv(index=False).encode("utf-8-sig"),
+                    file_name="projetos_aprovados_dou.csv", mime="text/csv",
+                    key="dl_csv_dou")
+            with d2c:
+                st.download_button(
+                    "⬇️ Baixar resultado (Excel)",
+                    data=gerar_excel(tabela_d, "DOU"),
+                    file_name="projetos_aprovados_dou.xlsx",
+                    mime=("application/vnd.openxmlformats-officedocument"
+                          ".spreadsheetml.sheet"),
+                    key="dl_xlsx_dou")
+
+            com_anexo = res_d[res_d["tem_anexo"] == "SIM"]
+            if not com_anexo.empty:
+                st.caption(
+                    f"⚠️ {len(com_anexo)} ato(s) do resultado remetem a anexo "
+                    "com lista de empresas/produtos que não é capturada "
+                    "automaticamente — abra o link para consultar."
+                )
+
+
+# =========================================================================
+# ABA 4 — Incentivos estaduais (SILT / SEFAZ-AM)
+# =========================================================================
+if df_silt is not None:
+    with abas[IDX["🏛️  Incentivos estaduais (SILT)"]]:
+
+        n_conc = (df_silt["classificacao"] == "concessao").sum()
+        periodo_s = ""
+        if df_silt["_dt"].notna().any():
+            periodo_s = (f'{df_silt["_dt"].min():%m/%Y} a '
+                         f'{df_silt["_dt"].max():%m/%Y}')
+        st.markdown(
+            f'<div class="ad-subtitle" style="margin-bottom:14px;">'
+            f'Decretos Concessivos do Estado do Amazonas (SEDECTI/CODAM) · '
+            f'{milhar(n_conc)} concessões · {periodo_s}</div>',
+            unsafe_allow_html=True,
+        )
+
+        termo_s = st.text_input(
+            "Buscar empresa, CNPJ, produto, NCM ou nº do decreto",
+            placeholder="ex.: 55.356, panificação, 1905, 09.488.986...",
+            key="busca_silt",
+        )
+        res_s = df_silt
+        if termo_s.strip():
+            for palavra in termo_s.lower().split():
+                res_s = res_s[res_s["_busca_low"].str.contains(
+                    palavra, regex=False)]
+
+        sf1, sf2 = st.columns(2)
+        with sf1:
+            cls_s = ["Todos"] + sorted(
+                c for c in df_silt["classificacao"].unique() if c)
+            sel_cs = st.selectbox("Tipo de ato", cls_s, key="cls_silt")
+            if sel_cs != "Todos":
+                res_s = res_s[res_s["classificacao"] == sel_cs]
+        with sf2:
+            creds = ["Todos"] + sorted(
+                c for c in df_silt["credito_estimulo"].unique() if c)
+            sel_cr = st.selectbox("Crédito estímulo", creds, key="cred_silt")
+            if sel_cr != "Todos":
+                res_s = res_s[res_s["credito_estimulo"] == sel_cr]
+
+        sm1, sm2, sm3 = st.columns(3)
+        sm1.metric("Decretos", milhar(len(res_s)))
+        sm2.metric("Empresas", milhar(res_s["empresa"].replace("", pd.NA).nunique()))
+        sm3.metric("Com NCM", milhar((res_s["ncms"] != "").sum()))
+
+        if res_s.empty:
+            st.warning("Nenhum decreto encontrado com esses critérios.")
+        else:
+            tabela_s = res_s[list(COLUNAS_SILT)].rename(columns=COLUNAS_SILT)
+            st.dataframe(
+                tabela_s, width="stretch", hide_index=True, height=520,
+                column_config={
+                    "Data": st.column_config.TextColumn(width="small"),
+                    "Decreto": st.column_config.TextColumn(width="small"),
+                    "Empresa": st.column_config.TextColumn(width="large"),
+                    "NCM/SH": st.column_config.TextColumn(width="medium"),
+                    "Link": st.column_config.LinkColumn(
+                        "SILT", display_text="abrir", width="small"),
+                },
+            )
+
+            s1c, s2c = st.columns(2)
+            with s1c:
+                st.download_button(
+                    "⬇️ Baixar resultado (CSV)",
+                    data=tabela_s.to_csv(index=False).encode("utf-8-sig"),
+                    file_name="decretos_concessivos_silt.csv", mime="text/csv",
+                    key="dl_csv_silt")
+            with s2c:
+                st.download_button(
+                    "⬇️ Baixar resultado (Excel)",
+                    data=gerar_excel(tabela_s, "SILT"),
+                    file_name="decretos_concessivos_silt.xlsx",
+                    mime=("application/vnd.openxmlformats-officedocument"
+                          ".spreadsheetml.sheet"),
+                    key="dl_xlsx_silt")
 
 renderizar_rodape()
