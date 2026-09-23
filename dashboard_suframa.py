@@ -148,7 +148,7 @@ def aplicar_estilo():
 
       /* Selectbox e radio na area principal */
       [data-testid="stMain"] [data-baseweb="select"] > div {{
-        background-color: {BURGUNDY_DARK} !important;
+        background-color: {CREAM} !important;
         border: 1px solid {SAND} !important;
       }}
       [data-testid="stMain"] [data-baseweb="select"] * {{
@@ -360,6 +360,7 @@ COLUNAS_DOU = {
     "cnpj": "CNPJ",
     "numero_ato": "Portaria",
     "item": "Item",
+    "fonte": "Origem",
     "processo": "Processo",
     "url": "Link",
 }
@@ -379,29 +380,60 @@ COLUNAS_SILT = {
 
 
 @st.cache_data(show_spinner="Carregando os atos do DOU...")
+def _preparar_dou(d, fonte):
+    """Normaliza uma base de atos do DOU e marca a origem."""
+    for c in list(COLUNAS_DOU) + ["ato_de_projeto", "tem_anexo", "texto",
+                                  "texto_item", "item"]:
+        if c not in d.columns:
+            d[c] = ""
+    for c in d.columns:
+        d[c] = d[c].fillna("").astype(str)
+    d["fonte"] = fonte
+    return d
+
+
 def carregar_dou():
+    """Junta as duas series: o portal moderno e o acervo antigo.
+
+    Sao coletas de origens diferentes — o portal entrega cada ato isolado,
+    enquanto no acervo antigo o ato e reconstruido do texto da pagina do
+    jornal. A coluna "fonte" preserva essa distincao, porque a cobertura
+    e a precisao nao sao iguais nas duas pontas.
+    """
+    partes = []
+
     for nome in ("dou_suframa.parquet", "dados/dou_suframa.parquet"):
         p = Path(nome)
         if p.is_file():
-            d = pd.read_parquet(p)
-            for c in list(COLUNAS_DOU) + ["ato_de_projeto", "tem_anexo", "texto",
-                                  "texto_item", "item"]:
-                if c not in d.columns:
-                    d[c] = ""
-            for c in d.columns:
-                d[c] = d[c].fillna("").astype(str)
-            d["_dt"] = pd.to_datetime(d["data_publicacao"], format="%d/%m/%Y",
-                                      errors="coerce")
-            # Busca no texto DO ITEM, nao do ato inteiro. Num ato coletivo
-            # todas as linhas compartilham o texto integral, entao buscar
-            # nele faria "motocicleta" devolver tambem os colchoes e vidros
-            # publicados no mesmo documento.
-            campo_texto = "texto_item" if (d["texto_item"] != "").any() else "texto"
-            d["_busca_low"] = montar_busca(
-                d, ["empresa", "cnpj", "produto", "codigo_produto",
-                    "numero_ato", "processo", "titulo", campo_texto]).str.lower()
-            return d
-    return None
+            partes.append(_preparar_dou(pd.read_parquet(p), "Portal DOU"))
+            break
+
+    for nome in ("dou_legado.parquet", "dados/dou_legado.parquet"):
+        p = Path(nome)
+        if p.is_file():
+            partes.append(_preparar_dou(pd.read_parquet(p), "Acervo antigo"))
+            break
+
+    if not partes:
+        return None
+
+    d = pd.concat(partes, ignore_index=True) if len(partes) > 1 else partes[0]
+    d = d.fillna("")
+    for c in d.columns:
+        d[c] = d[c].astype(str)
+
+    d["_dt"] = pd.to_datetime(d["data_publicacao"], format="%d/%m/%Y",
+                              errors="coerce")
+    d = d.sort_values("_dt", ascending=False)
+
+    # Busca no texto DO ITEM, nao do ato inteiro. Num ato coletivo todas as
+    # linhas compartilham o texto integral, entao buscar nele faria
+    # "motocicleta" devolver tambem os colchoes publicados no mesmo dia.
+    campo_texto = "texto_item" if (d["texto_item"] != "").any() else "texto"
+    d["_busca_low"] = montar_busca(
+        d, ["empresa", "cnpj", "produto", "codigo_produto",
+            "numero_ato", "processo", "titulo", campo_texto]).str.lower()
+    return d
 
 
 @st.cache_data(show_spinner="Carregando os decretos do SILT...")
@@ -532,7 +564,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-rotulos = ["📦  Produtos / Tipos SS"]
+rotulos = ["📦  Produtos / Tipos"]
 if df_lips is not None:
     rotulos.append("🧪  Insumos por Produto")
 if df_dou is not None:
@@ -738,11 +770,19 @@ if df_dou is not None:
             periodo = (f'{so_projeto["_dt"].min():%m/%Y} a '
                        f'{so_projeto["_dt"].max():%m/%Y}')
         st.markdown(
-            f'<div class="ad-subtitle" style="margin-bottom:14px;">'
+            f'<div class="ad-subtitle" style="margin-bottom:6px;">'
             f'Portarias e Resoluções da SUFRAMA sobre projetos de empresas · '
             f'{milhar(n_apr)} aprovações · {periodo}</div>',
             unsafe_allow_html=True,
         )
+        if "Acervo antigo" in set(so_projeto["fonte"]):
+            st.caption(
+                "Até 2015 os atos vêm do acervo digitalizado da Imprensa "
+                "Nacional, reconstruídos do texto da página do jornal: a "
+                "cobertura é parcial e convém conferir no DOU antes de citar. "
+                "De 2016 em diante vêm do portal, onde cada ato é publicado "
+                "isoladamente."
+            )
 
         modo_d = st.radio(
             "Modo de consulta",
@@ -789,7 +829,7 @@ if df_dou is not None:
             else:
                 res_d = res_d.iloc[0:0]
 
-        cf1, cf2 = st.columns([1, 1])
+        cf1, cf2, cf3 = st.columns(3)
         with cf1:
             classes = ["Todos"] + sorted(
                 c for c in so_projeto["classificacao"].unique() if c)
@@ -802,6 +842,12 @@ if df_dou is not None:
             sel_tp = st.selectbox("Tipo de projeto", tipos_p, key="tp_dou")
             if sel_tp != "Todos":
                 res_d = res_d[res_d["tipo_projeto"] == sel_tp]
+        with cf3:
+            origens = ["Todas"] + sorted(
+                f for f in so_projeto["fonte"].unique() if f)
+            sel_fo = st.selectbox("Origem", origens, key="fonte_dou")
+            if sel_fo != "Todas":
+                res_d = res_d[res_d["fonte"] == sel_fo]
 
         m1, m2, m3 = st.columns(3)
         m1.metric("Atos", milhar(len(res_d)))
@@ -818,6 +864,7 @@ if df_dou is not None:
                 st.warning("Nenhum ato encontrado com esses critérios.")
         else:
             cols_d = list(COLUNAS_DOU) + ["produto_padrao", "ncms_do_produto"]
+            cols_d = [c for c in cols_d if c in res_d.columns]
             rotulos_d = dict(COLUNAS_DOU)
             rotulos_d["produto_padrao"] = "Produto-padrão (base SUFRAMA)"
             rotulos_d["ncms_do_produto"] = "NCMs do produto"
@@ -830,6 +877,7 @@ if df_dou is not None:
                     "Ato": st.column_config.TextColumn(width="small"),
                     "Empresa": st.column_config.TextColumn(width="large"),
                     "Cód.": st.column_config.TextColumn(width="small"),
+                    "Origem": st.column_config.TextColumn(width="small"),
                     "Link": st.column_config.LinkColumn(
                         "DOU", display_text="abrir", width="small"),
                 },

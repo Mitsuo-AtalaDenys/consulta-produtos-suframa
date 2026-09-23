@@ -1,0 +1,710 @@
+
+
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+		<meta http-equiv="refresh" />
+		<link rel="shortcut icon" 		href="../img/favicon.ico" type="image/x-icon" />
+		<link rel="apple-touch-icon" 	href="../img/touch_icon.png">
+		<link rel="stylesheet" media="all" href="../css/estilos.css" />
+		<style type="text/css">
+			#uma-coluna {
+				margin: 0 auto;
+			}
+		</style>
+		
+		<script language="JavaScript" src="../js/javascript.js"></script>
+		<script language="JavaScript" src="../js/cookie.js"></script>
+		<!-- Global site tag (gtag.js) - Google Analytics -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-P2CEJM7H2M"></script>
+		<script>
+		  window.dataLayer = window.dataLayer || [];
+		  function gtag(){dataLayer.push(arguments);}
+		  gtag('js', new Date());
+		
+		  gtag('config', 'G-P2CEJM7H2M');
+		</script>
+	</head>
+
+	<body>
+		<script type="text/javascript" src="../js/jquery-1.12.4.min.js"></script>
+		<div id="uma-coluna">
+			
+			<div id="errosJS" class="errors" style="display: none;">
+				<ul class="errorMessage">
+					<li><span id="spanErrosJS"></span></li>
+				</ul>
+			</div>
+			<br /> <br />
+			
+
+
+
+<style>
+body {
+	font-family: arial;
+	font-size: 11px;
+}
+
+.consulta {
+	font-size: 11px;
+	position: absolute;
+	float: right;
+	opacity: 0.95;
+	-moz-opacity: 0.95;
+	filter: alpha(opacity = 95);
+	height: 190px;
+	width: 245px;
+	z-index: 1000;
+	background: #FFFED0;
+	margin-right: 0;
+	margin-top: 3.2em;
+	margin-left: 0.3em;
+	padding: 0.3em;
+	border: solid 1px #ccc;
+	padding-left: 0.6em;
+}
+
+.abaconteudo {
+	cursor: pointer;
+}
+
+.conteudo_consulta {
+	background: url(../img/seta.png) no-repeat right top;
+	margin-right: -0.7em;
+	padding-right: 0.2em;
+}
+
+ul, ol, li {
+	list-style: none;
+	margin: -25px 0px -0px -18px;
+}
+
+.acordeao-item-conteudo {
+	overflow-y: hidden;
+	max-height: 0;
+	padding-left: 20px;
+	padding-right: 30px;
+	transition: max-height 400ms linear, padding-bottom 200ms linear;
+	background: #f5f5f5;
+	width: 290px;
+	margin-bottom: 22pt;
+	overflow-x: hidden;
+}
+
+.acordeao-item_isActive .acordeao-item-titulo {
+	padding-bottom: 0;
+	clear: none;
+	position: relative;
+	float: left;
+	height: auto;
+	width: 340px;
+	padding: 3px 0px 3px 0px;
+	background: #f5f5f5;
+	cursor: pointer;
+	color: #0A5690;
+	font-size: 12px;
+	font-weight: bold;
+	font-family: Arial, Verdana, Helvetica;
+	text-align: justify;
+}
+
+.acordeao-item-titulo {
+	padding-bottom: 0;
+	clear: none;
+	position: relative;
+	float: left;
+	height: auto;
+	width: 340px;
+	padding: 3px 0px 3px 0px;
+	background: #f5f5f5;
+	cursor: pointer;
+	color: #0A5690;
+	font-size: 12px;
+	font-weight: bold;
+	font-family: Arial, Verdana, Helvetica;
+	text-align: justify;
+}
+
+.acordeao-item-titulo img {
+	position: relative;
+	float: right;
+	vertical-align: middle;
+	padding-top: 5px;
+	width: 20px;
+	left: 0px;
+	margin-right: 6pt;
+}
+
+.acordeao-item_isActive .acordeao-item-conteudo {
+	max-height: 200px;
+	clear: none;
+	overflow-x: hidden;
+}
+
+.titulo-aba {
+	
+}
+</style>
+<script type="text/javascript" src="../js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../js/easyTooltip.js"></script>
+<div class="consulta">
+	<div class="conteudo_consulta">
+		<b>FORMAS DE PESQUISA</b> <br>Para pesquisar qualquer PALAVRA,
+		basta inserir o termo desejado. <br> <b>EXEMPLO: Portaria.</b> <br>Para
+		pesquisar uma EXPRESSÃO, basta digitar o termo desejado ENTRE ASPAS
+		DUPLAS. <br> <b>EXEMPLO: FRASE: “autorização de pesquisa”
+			NÚMEROS (CPF,CNPJ...): “000.000.000-00”.</b> <br>Para PESQUISA
+		FONÉTICA, informe uma palavra que tem a mesma pronúncia apesar de
+		estar grafada de maneira distinta. <br> <b>EXEMPLO:
+			Marcus/Marcos; Sousa/Souza; infra-estrutura/infraestrutura.</b>
+	</div>
+</div>
+<div id="TRNcontainer01">
+	<ul class="acordeao">
+		<!--Pesquisa Avancada -->
+		<li class="acordeao-item acordeao-item_isActive">
+
+			<div class="acordeao-item-titulo">
+				<b>Pesquisa Avan&ccedil;ada</b> <img src="../img/setinha.gif"
+					style="width: 10px; height: 9px; border: 0px;">
+			</div>
+			<div class="acordeao-item-conteudo">
+				        
+<form id="pesquisa02" name="pesquisaAvancada" onsubmit="javascript:return validaForm('avancada');" action="/imprensa/core/consulta.action;jsessionid=J1wOvEfS5PAF+aK5+5Nlo2Dn.2bf9e5be-b080-36ae-be2e-733c664e064c" target="_parent" method="post">
+					<input type="hidden" name="edicao.jornal_hidden" value="" id="hidden_avancada" class="hidden_avancada"/>
+					<span class="TRNtexto">Informe o termo que deseja pesquisar:</span>
+					<br />
+					<span class="TRNtexto"> <input type="text" name="edicao.txtPesquisa" value="" id="txtPesquisa_avancada" title="Para pesquisa de expressões digite a frase entre aspas duplas."/>&nbsp; <input type="submit" id="pesquisa02_0" value="consulta" class="submit"/>
+&nbsp;&nbsp; <img src="../img/help.png"
+						class="abaconteudo" alt="Como pesquisar no Jornal"
+						style="border: 0px;" />
+					</span>
+					<br>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Selecione o Jornal:</td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,2,2000,529,525,3,3000,3020,1040,526,530,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,701,702" id="chk_avancada_0" class="jornal_avancada" className="todos"/><input type="hidden" id="__checkbox_chk_avancada_0" name="__checkbox_edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,2,2000,529,525,3,3000,3020,1040,526,530,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,701,702" />Todos</td>
+							<td><input type="checkbox" name="edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,600,601,602,603,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,701" id="chk_avancada_1" class="jornal_avancada"/><input type="hidden" id="__checkbox_chk_avancada_1" name="__checkbox_edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,600,601,602,603,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,701" /> <a href="#" id="DO1"
+								title="Leis, decretos, resoluções, instruções normativas, portarias e outros atos normativos de interesse geral.">
+									DOU1 </a></td>
+							<td><input type="checkbox" name="edicao.jornal" value="2,2000,529,525,604,605,606,607,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,702" id="chk_avancada_3" class="jornal_avancada"/><input type="hidden" id="__checkbox_chk_avancada_3" name="__checkbox_edicao.jornal" value="2,2000,529,525,604,605,606,607,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,702" />
+								<a href="#" id="DO2"
+								title="Atos de interesse dos servidores da Administração Pública Federal.">
+									DOU2 </a></td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="3,3000,3020,1040,526,530,608,609,610,611,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677" id="chk_avancada_4" class="jornal_avancada"/><input type="hidden" id="__checkbox_chk_avancada_4" name="__checkbox_edicao.jornal" value="3,3000,3020,1040,526,530,608,609,610,611,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677" /> <a href="#" id="DO3"
+								title="Contratos, editais, avisos e ineditoriais."> DOU3 </a></td>
+						</tr>
+					</table>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="2">Tipo de Pesquisa:</td>
+						</tr>
+						<tr>
+							<td><input type="radio" name="edicao.fonetica" value="S" />Fon&eacute;tica
+							</td>
+							<td><input type="radio" name="edicao.fonetica" value="null"
+								checked="checked" />Exata</td>
+						</tr>
+					</table>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Período:</td>
+						</tr>
+						<tr>
+							<td>Data Início: <input type="text" name="edicao.dtInicio" size="5" maxlength="5" value="22/09" id="dt_inicio_avancada" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Data Fim: <input type="text" name="edicao.dtFim" size="5" maxlength="5" value="22/09" id="dt_fim_avancada" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Ano: <select name="edicao.ano" id="ano_avancada" style="width: 60px;">
+    <option value="0"
+    > -- Selecionar -- </option>
+    <option value="2026" selected="selected">2026</option>
+    <option value="2025">2025</option>
+    <option value="2024">2024</option>
+    <option value="2023">2023</option>
+    <option value="2022">2022</option>
+    <option value="2021">2021</option>
+    <option value="2020">2020</option>
+    <option value="2019">2019</option>
+    <option value="2018">2018</option>
+    <option value="2017">2017</option>
+    <option value="2016">2016</option>
+    <option value="2015">2015</option>
+    <option value="2014">2014</option>
+    <option value="2013">2013</option>
+    <option value="2012">2012</option>
+    <option value="2011">2011</option>
+    <option value="2010">2010</option>
+    <option value="2009">2009</option>
+    <option value="2008">2008</option>
+    <option value="2007">2007</option>
+    <option value="2006">2006</option>
+    <option value="2005">2005</option>
+    <option value="2004">2004</option>
+    <option value="2003">2003</option>
+    <option value="2002">2002</option>
+    <option value="2001">2001</option>
+    <option value="2000">2000</option>
+    <option value="1999">1999</option>
+    <option value="1998">1998</option>
+    <option value="1997">1997</option>
+    <option value="1996">1996</option>
+    <option value="1995">1995</option>
+    <option value="1994">1994</option>
+    <option value="1993">1993</option>
+    <option value="1992">1992</option>
+    <option value="1991">1991</option>
+    <option value="1990">1990</option>
+
+
+</select>
+
+
+							</td>
+						</tr>
+					</table>
+				</form>
+
+
+
+
+			</div>
+		</li>
+		<!--Leitura de Jornais -->
+		<li class="acordeao-item">
+			<div class="acordeao-item-titulo">
+				<b>Leitura de Jornais</b> <img src="../img/setinha.gif"
+					style="width: 10px; height: 9px; border: 0px;">
+			</div>
+			<div class="acordeao-item-conteudo">
+				        
+<form id="pesquisa03" name="pesquisaJornais" onsubmit="javascript:return validaForm('relacao');" action="/imprensa/core/jornalList.action;jsessionid=J1wOvEfS5PAF+aK5+5Nlo2Dn.2bf9e5be-b080-36ae-be2e-733c664e064c" target="_parent" method="post">
+					<input type="hidden" name="edicao.jornal_hidden" value="" id="hidden_leitura" class="hidden_leitura"/>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Selecione o Jornal:</td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,540,1040,2,2000,529,525,3,3000,3020,1040,526,530,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,701,702" id="chk_leitura_0" class="jornal_leitura"/><input type="hidden" id="__checkbox_chk_leitura_0" name="__checkbox_edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,540,1040,2,2000,529,525,3,3000,3020,1040,526,530,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,701,702" />Todos</td>
+							<td><input type="checkbox" name="edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,540,1040,600,601,602,603,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,701" id="chk_relacao_1" class="jornal_leitura"/><input type="hidden" id="__checkbox_chk_relacao_1" name="__checkbox_edicao.jornal" value="1,1000,1010,1020,515,521,522,531,535,536,523,532,540,1040,600,601,602,603,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,701" /> <a href="#" id="DO1"
+								title="Leis, decretos, resoluções, instruções normativas, portarias e outros atos normativos de interesse geral.">
+									DOU1 </a></td>
+							<td><input type="checkbox" name="edicao.jornal" value="2,2000,529,525,604,605,606,607,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,702" id="chk_relacao_3" class="jornal_leitura"/><input type="hidden" id="__checkbox_chk_relacao_3" name="__checkbox_edicao.jornal" value="2,2000,529,525,604,605,606,607,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,702" />
+								<a href="#" id="DO2"
+								title="Atos de interesse dos servidores da Administração Pública Federal.">
+									DOU2 </a></td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="3,3000,3020,1040,526,530,608,609,610,611,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677" id="chk_relacao_4" class="jornal_leitura"/><input type="hidden" id="__checkbox_chk_relacao_4" name="__checkbox_edicao.jornal" value="3,3000,3020,1040,526,530,608,609,610,611,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677" /> <a href="#" id="DO3"
+								title="Contratos, editais, avisos e ineditoriais."> DOU3 </a></td>
+						</tr>
+					</table>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Período:</td>
+						</tr>
+						<tr>
+							<td>Data Início: <input type="text" name="edicao.dtInicio" size="5" maxlength="5" value="22/09" id="dt_inicio_relacao" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Data Fim: <input type="text" name="edicao.dtFim" size="5" maxlength="5" value="22/09" id="dt_fim_relacao" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Ano: <select name="edicao.ano" id="ano_relacao" style="width: 60px;">
+    <option value="0"
+    > -- Selecionar -- </option>
+    <option value="2026" selected="selected">2026</option>
+    <option value="2025">2025</option>
+    <option value="2024">2024</option>
+    <option value="2023">2023</option>
+    <option value="2022">2022</option>
+    <option value="2021">2021</option>
+    <option value="2020">2020</option>
+    <option value="2019">2019</option>
+    <option value="2018">2018</option>
+    <option value="2017">2017</option>
+    <option value="2016">2016</option>
+    <option value="2015">2015</option>
+    <option value="2014">2014</option>
+    <option value="2013">2013</option>
+    <option value="2012">2012</option>
+    <option value="2011">2011</option>
+    <option value="2010">2010</option>
+    <option value="2009">2009</option>
+    <option value="2008">2008</option>
+    <option value="2007">2007</option>
+    <option value="2006">2006</option>
+    <option value="2005">2005</option>
+    <option value="2004">2004</option>
+    <option value="2003">2003</option>
+    <option value="2002">2002</option>
+    <option value="2001">2001</option>
+    <option value="2000">2000</option>
+    <option value="1999">1999</option>
+    <option value="1998">1998</option>
+    <option value="1997">1997</option>
+    <option value="1996">1996</option>
+    <option value="1995">1995</option>
+    <option value="1994">1994</option>
+    <option value="1993">1993</option>
+    <option value="1992">1992</option>
+    <option value="1991">1991</option>
+    <option value="1990">1990</option>
+
+
+</select>
+
+
+							</td>
+						</tr>
+					</table>
+					<div align="right">
+						<span class="TRNtexto"> <br /> <input type="submit" id="pesquisa03_0" value="consulta" class="submit"/>
+
+						</span>
+					</div>
+				</form>
+
+
+
+
+			</div>
+		</li>
+		<!--Edicoes extras -->
+		<li class="acordeao-item">
+			<div class="acordeao-item-titulo">
+				<b>Edições Extras</b> <img src="../img/setinha.gif"
+					style="width: 10px; height: 9px; border: 0px;">
+			</div>
+			<div class="acordeao-item-conteudo">
+				        
+<form id="pesquisa04" name="pesquisaEdicoes" onsubmit="javascript:return validaForm('extras');" action="/imprensa/core/jornalList.action;jsessionid=J1wOvEfS5PAF+aK5+5Nlo2Dn.2bf9e5be-b080-36ae-be2e-733c664e064c" target="_parent" method="post">
+					<input type="hidden" name="edicao.jornal_hidden" value="" id="hidden_extras" class="hidden_extras"/>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Selecione o Jornal:</td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="1000,521,2000,525,3000,526,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,701,702" id="chk_extras_0" class="jornal_extras"/><input type="hidden" id="__checkbox_chk_extras_0" name="__checkbox_edicao.jornal" value="1000,521,2000,525,3000,526,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,701,702" />Todos</td>
+							<td><input type="checkbox" name="edicao.jornal" value="1000,521,600,601,602,603,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,701" id="chk_extras_1" class="jornal_extras"/><input type="hidden" id="__checkbox_chk_extras_1" name="__checkbox_edicao.jornal" value="1000,521,600,601,602,603,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,701" /> <a href="#" id="DO1"
+								title="Leis, decretos, resoluções, instruções normativas, portarias e outros atos normativos de interesse geral.">
+									DOU1 </a></td>
+							<td><input type="checkbox" name="edicao.jornal" value="2000,525,604,605,606,607,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,702" id="chk_extras_3" class="jornal_extras"/><input type="hidden" id="__checkbox_chk_extras_3" name="__checkbox_edicao.jornal" value="2000,525,604,605,606,607,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,702" /> <a href="#" id="DO2"
+								title="Atos de interesse dos servidores da Administração Pública Federal.">
+									DOU2 </a></td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="3000,526,608,609,610,611,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677" id="chk_extras_4" class="jornal_extras"/><input type="hidden" id="__checkbox_chk_extras_4" name="__checkbox_edicao.jornal" value="3000,526,608,609,610,611,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677" /> <a href="#" id="DO3"
+								title="Contratos, editais, avisos e ineditoriais."> DOU3 </a></td>
+						</tr>
+					</table>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Período:</td>
+						</tr>
+						<tr>
+							<td>Data Início: <input type="text" name="edicao.dtInicio" size="5" maxlength="5" value="22/09" id="dt_inicio_extras" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Data Fim: <input type="text" name="edicao.dtFim" size="5" maxlength="5" value="22/09" id="dt_fim_extras" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Ano: <select name="edicao.ano" id="ano_extras" style="width: 60px;">
+    <option value="0"
+    > -- Selecionar -- </option>
+    <option value="2026" selected="selected">2026</option>
+    <option value="2025">2025</option>
+    <option value="2024">2024</option>
+    <option value="2023">2023</option>
+    <option value="2022">2022</option>
+    <option value="2021">2021</option>
+    <option value="2020">2020</option>
+    <option value="2019">2019</option>
+    <option value="2018">2018</option>
+    <option value="2017">2017</option>
+    <option value="2016">2016</option>
+    <option value="2015">2015</option>
+    <option value="2014">2014</option>
+    <option value="2013">2013</option>
+    <option value="2012">2012</option>
+    <option value="2011">2011</option>
+    <option value="2010">2010</option>
+    <option value="2009">2009</option>
+    <option value="2008">2008</option>
+    <option value="2007">2007</option>
+    <option value="2006">2006</option>
+    <option value="2005">2005</option>
+    <option value="2004">2004</option>
+    <option value="2003">2003</option>
+    <option value="2002">2002</option>
+    <option value="2001">2001</option>
+    <option value="2000">2000</option>
+    <option value="1999">1999</option>
+    <option value="1998">1998</option>
+    <option value="1997">1997</option>
+    <option value="1996">1996</option>
+    <option value="1995">1995</option>
+    <option value="1994">1994</option>
+    <option value="1993">1993</option>
+    <option value="1992">1992</option>
+    <option value="1991">1991</option>
+    <option value="1990">1990</option>
+
+
+</select>
+
+
+							</td>
+						</tr>
+					</table>
+					<div align="right">
+						<span class="TRNtexto"> <br /> <input type="submit" id="pesquisa04_0" value="consulta" class="submit"/>
+
+						</span>
+					</div>
+				</form>
+
+
+
+
+			</div>
+		</li>
+		<!--Suplementos -->
+		<li class="acordeao-item">
+			<div class="acordeao-item-titulo">
+				<b>Suplementos</b> <img src="../img/setinha.gif"
+					style="width: 10px; height: 9px; border: 0px;">
+			</div>
+			<div class="acordeao-item-conteudo">
+				        
+<form id="pesquisa05" name="pesquisaSuplementos" onsubmit="javascript:return validaForm('suplementos')" action="/imprensa/core/suplementoList.action;jsessionid=J1wOvEfS5PAF+aK5+5Nlo2Dn.2bf9e5be-b080-36ae-be2e-733c664e064c" target="_parent" method="post">
+					<input type="hidden" name="edicao.jornal_hidden" value="" id="hidden_suplementos" class="hidden_suplementos"/>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Selecione o Jornal:</td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="1021,1020,1010,531,1030,3010,3020,540,1040" id="chk_suplementos_0" class="jornal_suplementos"/><input type="hidden" id="__checkbox_chk_suplementos_0" name="__checkbox_edicao.jornal" value="1021,1020,1010,531,1030,3010,3020,540,1040" />&nbsp;Todos</td>
+							<td><input type="checkbox" name="edicao.jornal" value="1021,1020" id="chk_suplementos_1" class="jornal_suplementos"/><input type="hidden" id="__checkbox_chk_suplementos_1" name="__checkbox_edicao.jornal" value="1021,1020" />&nbsp;Orçamento&nbsp;da&nbsp;União</td>
+							<td><input type="checkbox" name="edicao.jornal" value="1010,531" id="chk_suplementos_6" class="jornal_suplementos"/><input type="hidden" id="__checkbox_chk_suplementos_6" name="__checkbox_edicao.jornal" value="1010,531" />&nbsp;Anvisa</td>
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="1030" id="chk_suplementos_4" class="jornal_suplementos"/><input type="hidden" id="__checkbox_chk_suplementos_4" name="__checkbox_edicao.jornal" value="1030" />&nbsp;Plano&nbsp;Plurianual</td>
+							<td><input type="checkbox" name="edicao.jornal" value="3010" id="chk_suplementos_5" class="jornal_suplementos"/><input type="hidden" id="__checkbox_chk_suplementos_5" name="__checkbox_edicao.jornal" value="3010" />&nbsp;Polícia&nbsp;Rodoviária&nbsp;Federal
+							</td>
+							<!-- 						<td> -->
+							
+							
+							
+							
+							<!-- 						</td> -->
+						</tr>
+						<tr>
+							<td><input type="checkbox" name="edicao.jornal" value="540,1040" id="chk_suplementos_9" class="jornal_suplementos"/><input type="hidden" id="__checkbox_chk_suplementos_9" name="__checkbox_edicao.jornal" value="540,1040" />&nbsp;DOU1</td>
+							<td>&nbsp;</td>
+							<td>&nbsp;</td>
+						</tr>
+					</table>
+					<table width="300" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td colspan="3">Período:</td>
+						</tr>
+						<tr>
+							<td>Data Início: <input type="text" name="edicao.dtInicio" size="5" maxlength="5" value="22/09" id="dt_inicio_suplementos" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Data Fim: <input type="text" name="edicao.dtFim" size="5" maxlength="5" value="22/09" id="dt_fim_suplementos" onKeyPress="javascript:mascara(this,mesAno);"/>
+							</td>
+							<td>Ano: <select name="edicao.ano" id="ano_suplementos" style="width: 60px;">
+    <option value="0"
+    > -- Selecionar -- </option>
+    <option value="2026" selected="selected">2026</option>
+    <option value="2025">2025</option>
+    <option value="2024">2024</option>
+    <option value="2023">2023</option>
+    <option value="2022">2022</option>
+    <option value="2021">2021</option>
+    <option value="2020">2020</option>
+    <option value="2019">2019</option>
+    <option value="2018">2018</option>
+    <option value="2017">2017</option>
+    <option value="2016">2016</option>
+    <option value="2015">2015</option>
+    <option value="2014">2014</option>
+    <option value="2013">2013</option>
+    <option value="2012">2012</option>
+    <option value="2011">2011</option>
+    <option value="2010">2010</option>
+    <option value="2009">2009</option>
+    <option value="2008">2008</option>
+    <option value="2007">2007</option>
+    <option value="2006">2006</option>
+    <option value="2005">2005</option>
+    <option value="2004">2004</option>
+    <option value="2003">2003</option>
+    <option value="2002">2002</option>
+    <option value="2001">2001</option>
+    <option value="2000">2000</option>
+    <option value="1999">1999</option>
+    <option value="1998">1998</option>
+    <option value="1997">1997</option>
+    <option value="1996">1996</option>
+    <option value="1995">1995</option>
+    <option value="1994">1994</option>
+    <option value="1993">1993</option>
+    <option value="1992">1992</option>
+    <option value="1991">1991</option>
+    <option value="1990">1990</option>
+
+
+</select>
+
+
+							</td>
+						</tr>
+					</table>
+					<div align="right">
+						<span class="TRNtexto"> <br /> <input type="submit" id="pesquisa05_0" value="consulta" class="submit"/>
+
+						</span>&nbsp;&nbsp;
+					</div>
+				</form>
+
+
+
+
+			</div>
+		</li>
+	</ul>
+</div>
+
+<script>
+	(function () {
+  'use strict'
+
+  var $acordeao = document.querySelector('.acordeao')
+
+  $acordeao.addEventListener('click', function(event) {
+    var $this = this
+    var $origin = event.target
+	if($origin.parentNode.classList.contains('acordeao-item-titulo')){
+	      document.querySelector('.acordeao-item_isActive').classList.remove('acordeao-item_isActive')
+	      $origin.parentNode.parentNode.classList.add('acordeao-item_isActive')
+	}
+	else if($origin.classList.contains('acordeao-item-titulo')) {
+      document.querySelector('.acordeao-item_isActive').classList.remove('acordeao-item_isActive')
+      $origin.parentNode.classList.add('acordeao-item_isActive')
+    }
+    
+  })
+})();
+
+	$(document).ready(function() {
+		$(document).ready(function(){
+			$(".consulta").hide();
+			$(".abaconteudo").click(function(){
+				$(".consulta").animate({height:'toggle'})
+			});
+		});
+		$("form#pesquisa02").submit(function() {
+			var selectedGroups  = new Array();
+			$(".jornal_avancada:checkbox:checked").each(function() {
+					selectedGroups.push($(this).val());
+				});
+			$(".hidden_avancada").each(function(){
+				if (selectedGroups.length==0) {				
+					document.getElementById('hidden_avancada').value = document.getElementById('chk_avancada_0').value;
+				};
+			});
+		});	
+		$("form#pesquisa03").submit(function() {
+			var selectedGroups  = new Array();
+			$(".jornal_leitura:checkbox:checked").each(function() {
+					selectedGroups.push($(this).val());
+				});
+			$(".hidden_leitura").each(function(){
+				if (selectedGroups.length==0) {				
+					document.getElementById('hidden_leitura').value = document.getElementById('chk_leitura_0').value;
+				};
+			});
+		});
+		$("form#pesquisa04").submit(function() {
+			var selectedGroups  = new Array();
+			$(".jornal_extras:checkbox:checked").each(function() {
+					selectedGroups.push($(this).val());
+				});
+			$(".hidden_extras").each(function(){
+				if (selectedGroups.length==0) {				
+					document.getElementById('hidden_extras').value = document.getElementById('chk_extras_0').value;
+				};
+			});
+		});	
+		$("form#pesquisa05").submit(function() {
+			var selectedGroups  = new Array();
+			$(".jornal_suplementos:checkbox:checked").each(function() {
+					selectedGroups.push($(this).val());
+				});
+			$(".hidden_suplementos").each(function(){
+				if (selectedGroups.length==0) {				
+					document.getElementById('hidden_suplementos').value = document.getElementById('chk_suplementos_0').value;
+				};
+			});
+		});		
+		
+	});
+	function validaForm(formulario){
+		if(formulario == 'dia' || formulario == 'avancada'){
+			var valorCampoTexto = 'txtPesquisa_'+ formulario;
+			texto = document.getElementById(valorCampoTexto).value;
+			if(Trim(texto) == "") {
+				alert("Informe uma palavra ou termo para pesquisa!!");
+				return false;
+			}
+		}
+		var varAno = "ano_"+formulario;
+		var varFim = "dt_fim_"+formulario;
+		var varInicio = "dt_inicio_"+formulario;
+		var ano = document.getElementById(varAno).value;
+		var data1 = document.getElementById(varInicio).value;
+		var data2 = document.getElementById(varFim).value;
+		// ano =  
+		var dia1 = data1.substring (0, data1.indexOf("/",1));
+		var mes1 = data1.substring ((data1.indexOf("/",1)+1), (data1.lastIndexOf("/")+3));
+		var dataInvertida1 = ano +"/"+ mes1 +"/"+ dia1;
+		valida1 = VerificaData(dataInvertida1);
+		if(!valida1) {
+			return false;
+		};
+		var dia2 = data2.substring (0, data2.indexOf("/",1));
+		var mes2 = data2.substring ((data2.indexOf("/",1)+1), (data2.lastIndexOf("/")+3));
+		dataInvertida2 = ano +"/"+ mes2 +"/"+ dia2;
+		valida2 = VerificaData(dataInvertida2);
+		if(!valida2) {
+			return false;
+		};
+		date1= Date.parse(dataInvertida1);
+		date2= Date.parse(dataInvertida2);
+		iDifference = (date2-date1)/(24*60*60*1000);
+		if (iDifference < 0) {
+		   alert("A data inicial deve ser menor que a data final.");
+		   return false;
+		}
+		return true;
+	}
+    var controleEnvio = true;
+</script>
+</div>
+
+</body>
+</html>
+		</div>
+		<div id="dialog-message" title="Erro de validação">
+			<div id="errorList" class="errorList"></div>
+		</div>
+	</body>
+</html>

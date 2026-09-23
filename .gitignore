@@ -24,3 +24,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+dados/_parcial_legado.csv
+dados/dou_legado.csv
+dados/paginas_legado/

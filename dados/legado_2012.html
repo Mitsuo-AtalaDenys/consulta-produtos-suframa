@@ -1,0 +1,445 @@
+
+
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+	<link rel="shortcut icon" 		href="../img/favicon.ico" type="image/x-icon" />
+	<link rel="apple-touch-icon" 	href="../img/touch_icon.png">
+	<link rel="stylesheet" href="../css/bootstrap.min.css" />
+	<link rel="stylesheet" media="all" href="../css/estilos.css" />
+	<script language="JavaScript" src="../js/javascript.js"></script>
+	<script language="JavaScript" src="../js/cookie.js"></script>
+	<script src="../js/jquery-slim.min.js"></script>
+	<script src="../js/popper.min.js"></script>
+	<script src="../js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="../js/jquery-1.12.4.min.js"></script>
+	
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-P2CEJM7H2M"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+	
+	  gtag('config', 'G-P2CEJM7H2M');
+	</script>
+		
+
+<script language="JavaScript" src="../js/javascript.js"></script>
+<script language="JavaScript" src="../js/cookie.js"></script>
+<!-- produção-->
+
+
+<!-- Homol-->
+
+
+<!-- Desenv-->
+
+<br />
+<br />
+<br />
+
+
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="imagetoolbar" content="no" />
+
+<style>
+	body {
+		padding-bottom: 0px;
+	}
+	
+	.container-narrow {
+		margin: 0 auto;
+		max-width: 65%;
+		margin-top: -50px;
+	}
+	
+	.container-narrow>hr {
+		margin: 30px 0;
+	}
+	
+	.marketing {
+		margin: -20px 0;
+		text-align: center;
+	}
+	
+	.marketing p+h4 {
+		margin-top: 28px;
+		text-align: justify
+	}
+	
+	.justify {
+		text-align: justify
+	}
+	
+	.titulo_jornal {
+		font-weight: bold;
+		text-align: center;
+	}
+	
+	#navigation {
+		color: black;
+		font-size: 10pt;
+		padding-left: 15%;
+		padding-right: 15%;
+	}
+	
+</style>
+<title>Portal da Imprensa Nacional &mdash; Resultado da Pesquisa</title>
+<script>
+			$(document).ready(function(){
+				$(".consulta").hide();
+				$(".abaconteudo").click(function(){
+					$(".consulta").animate({height:'toggle'})
+				});
+			});
+			function submete(pagina){
+			    //window.document.forms[0].action = "consulta.action";
+			    document.getElementById("pesquisa02").action = "consulta.action";
+			    document.getElementById("paginaAtual").value = pagina;
+			    //window.document.forms[0].submit();
+			    document.getElementById("pesquisa02").submit();
+			}
+			$(document).ready(function() {
+				$("form#pesquisa02").submit(function() {
+					var selectedGroups  = new Array();
+					$(".jornal_avancada:checkbox:checked").each(function() {
+							selectedGroups.push($(this).val());
+						});
+					$(".hidden_avancada").each(function(){
+						if (selectedGroups.length==0) {				
+							document.getElementById('hidden_avancada').value = document.getElementById('consultaAntiga_jornal').value;
+						};
+					});
+					
+				});
+			});
+			function validaForm(formulario){
+				if(formulario == 'dia' || formulario == 'avancada'){
+					var valorCampoTexto = 'txtPesquisa_'+ formulario;
+					texto = document.getElementById(valorCampoTexto).value;
+					if(Trim(texto) == "") {
+						alert("Informe uma palavra ou termo para pesquisa!");
+						return false;
+					}
+				}
+				var varAno = "ano_"+formulario;
+				var varFim = "dt_fim_"+formulario;
+				var varInicio = "dt_inicio_"+formulario;
+				var ano = document.getElementById(varAno).value;
+				var data1 = document.getElementById(varInicio).value;
+				var data2 = document.getElementById(varFim).value;
+				var dia1 = data1.substring (0, data1.indexOf("/",1));
+				var mes1 = data1.substring ((data1.indexOf("/",1)+1), (data1.lastIndexOf("/")+3));
+				var dataInvertida1 = ano +"/"+ mes1 +"/"+ dia1;
+				valida1 = VerificaData(dataInvertida1);
+				if(!valida1) {
+					return false;
+				};
+				var dia2 = data2.substring (0, data2.indexOf("/",1));
+				var mes2 = data2.substring ((data2.indexOf("/",1)+1), (data2.lastIndexOf("/")+3));
+				dataInvertida2 = ano +"/"+ mes2 +"/"+ dia2;
+				valida2 = VerificaData(dataInvertida2);
+				if(!valida2) {
+					return false;
+				};
+				date1= Date.parse(dataInvertida1);
+				date2= Date.parse(dataInvertida2);
+				iDifference = (date2-date1)/(24*60*60*1000);
+				if (iDifference < 0) {
+					alert("A data inicial deve ser menor que a data final.");
+					return false;
+				}
+				return true;
+			}
+		</script>
+</head>
+<body>
+	<div class="consulta" style="display:none;">
+			        
+<form id="pesquisa02" name="pesquisaAvancada" onsubmit="javascript:return validaForm('avancada');" action="/imprensa/core/consulta.action;jsessionid=kVdb2fm03V-cbxfsJPwpGPbe.bad11c44-cad1-3401-adcc-0fff68f06500" method="post">
+ 				<input type="hidden" name="edicao.paginaAtual" value="1" id="paginaAtual"/>
+ 				<input type="hidden" name="edicao.jornal_hidden" value="" id="hidden_avancada" class="hidden_avancada"/>
+ 				<input type="hidden"
+					   name="edicao.consultaAntiga"
+ 					   id="consultaAntiga_jornal"
+					   value='1,1000,1010,1020,515,521,522,531,535,536,523,532,2,2000,529,525,3,3000,3020,1040,526,530,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,701,702' />
+				<input type="hidden"
+ 					   name="edicao.fonetica"
+					   id="consultaAntiga_fonetica"
+					   value='null' />
+ 				<span class="TRNtexto">Informe o termo que deseja pesquisar:</span>
+				<span class="TRNtexto">
+					<input type="text" name="edicao.txtPesquisa" value="Zona Franca de Manaus" id="txtPesquisa_avancada"/>&nbsp;
+					<input type="submit" id="pesquisa02_0" value="consulta" class="submit" onclick="submete(1);"/>
+
+				</span>
+ 				<br><br>
+ 				<table width="500"
+					   border="0"
+ 					   cellspacing="0"
+ 					   cellpadding="0">
+					<tr>
+						<td colspan="3">Selecione o Jornal: </td>
+ 					</tr>
+					<tr>
+						<td>
+							<input type="checkbox" name="edicao.jornal" value="1,1000,1010,2,2000,3,3000,4,5,6,126,4000,5000,600,20,21,1020" id="chk_avancada_0" class="jornal_avancada" className="todos"/><input type="hidden" id="__checkbox_chk_avancada_0" name="__checkbox_edicao.jornal" value="1,1000,1010,2,2000,3,3000,4,5,6,126,4000,5000,600,20,21,1020" />
+							Todos
+						</td>
+ 						<td>
+							<input type="checkbox" name="edicao.jornal" value="1,1000,1010,1020" id="chk_avancada_1" class="jornal_avancada"/><input type="hidden" id="__checkbox_chk_avancada_1" name="__checkbox_edicao.jornal" value="1,1000,1010,1020" />
+							<a href="#" 
+ 							   id="DO1"
+ 							   title="Leis, decretos, resoluções, instruções normativas, portarias e outros atos normativos de interesse geral.">
+ 							   DOU1 
+ 							</a>
+						</td>
+ 						<td>
+ 							<input type="checkbox" name="edicao.jornal" value="2,2000" id="chk_avancada_3" class="jornal_avancada"/><input type="hidden" id="__checkbox_chk_avancada_3" name="__checkbox_edicao.jornal" value="2,2000" />
+ 							<a href="#"
+							   id="DO2"
+							   title="Atos de interesse dos servidores da Administração Pública Federal.">
+							   DOU2
+							</a>
+						</td>
+ 					</tr>
+ 					<tr>
+ 						<td>
+							<input type="checkbox" name="edicao.jornal" value="3,3000" id="chk_avancada_4" class="jornal_avancada"/><input type="hidden" id="__checkbox_chk_avancada_4" name="__checkbox_edicao.jornal" value="3,3000" />
+							<a href="#"
+							   id="DO3"
+							   title="Contratos, editais, avisos e ineditoriais.">
+							   DOU3
+							</a>
+						</td>
+ 					</tr>
+ 				</table>
+				<table width="300"
+ 					   border="0"
+					   cellspacing="0"
+ 					   cellpadding="0">
+ 					<tr>
+ 						<td colspan="2">Tipo de Pesquisa:</td>
+ 					</tr>
+					<tr>
+ 						<td>
+ 							<input type="radio"
+								   name="edicao.fonetica"
+ 								   value="S" />Fon&eacute;tica
+ 						</td>
+						<td>
+ 							<input type="radio"
+ 								   name="edicao.fonetica"
+								   value="null"
+ 								   checked="checked" />Exata
+						</td>
+ 					</tr>
+ 				</table>
+				<table width="400"
+					   border="0"
+					   cellspacing="0"
+ 					   cellpadding="0">
+					<tr>
+						<td colspan="3">Período:</td>
+					</tr>
+ 					<tr>
+						<td>Data Início:
+							<input type="text" name="edicao.dtInicio" size="5" maxlength="5" value="01/01" id="dt_inicio_avansada" onKeyPress="javascript:mascara(this,mesAno);"/>
+						</td>
+						<td> Data Fim:
+							<input type="text" name="edicao.dtFim" size="5" maxlength="5" value="31/12" id="dt_fim_avansada" onKeyPress="javascript:mascara(this,mesAno);"/>
+						</td> -->
+ 						<td> Ano:  -->
+							<select name="edicao.ano" id="ano_avansada" style="width: 140px;">
+    <option value="0"
+    > -- Selecionar -- </option>
+    <option value="2026">2026</option>
+    <option value="2025">2025</option>
+    <option value="2024">2024</option>
+    <option value="2023">2023</option>
+    <option value="2022">2022</option>
+    <option value="2021">2021</option>
+    <option value="2020">2020</option>
+    <option value="2019">2019</option>
+    <option value="2018">2018</option>
+    <option value="2017">2017</option>
+    <option value="2016">2016</option>
+    <option value="2015">2015</option>
+    <option value="2014">2014</option>
+    <option value="2013">2013</option>
+    <option value="2012" selected="selected">2012</option>
+    <option value="2011">2011</option>
+    <option value="2010">2010</option>
+    <option value="2009">2009</option>
+    <option value="2008">2008</option>
+    <option value="2007">2007</option>
+    <option value="2006">2006</option>
+    <option value="2005">2005</option>
+    <option value="2004">2004</option>
+    <option value="2003">2003</option>
+    <option value="2002">2002</option>
+    <option value="2001">2001</option>
+    <option value="2000">2000</option>
+    <option value="1999">1999</option>
+    <option value="1998">1998</option>
+    <option value="1997">1997</option>
+    <option value="1996">1996</option>
+    <option value="1995">1995</option>
+    <option value="1994">1994</option>
+    <option value="1993">1993</option>
+    <option value="1992">1992</option>
+    <option value="1991">1991</option>
+    <option value="1990">1990</option>
+
+
+</select>
+
+
+						</td>
+ 					</tr>
+				</table>
+ 			</form>
+
+
+
+
+		</div>
+
+	<div class="container-narrow">
+
+		<div class="text-center">
+			<img alt="Logotipo da Imprensa Nacional"
+				src="../img/logoColorido.gif">
+		</div>
+		<hr>
+		<h4 class="marketing">
+			<p>Resultado da Pesquisa</p>
+		</h4>
+		<hr>
+		
+		<form name="formBusca" method="post" target="_parent">
+		<center>
+		<nav aria-label="Page navigation edicoes" id="navigation">
+			<ul class="pagination">703 itens encontrados, exibindo 1 a 10. [<b>Primeiro</b>/<b>Anterior</b>]&nbsp;<b>1</b>&nbsp;<li class="page-item"><a href='#' onclick='submete(2)'>2</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(3)'>3</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(4)'>4</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(5)'>5</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(6)'>6</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(7)'>7</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(8)'>8</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(9)'>9</a></li>&nbsp;<li class="page-item"><a href='#' onclick='submete(10)'>10</a></li><li class="page-item">&nbsp;&nbsp;[<a href='#' onclick='submete(2)'>Próximo</a></li>/<li class="page-item"><a href='#' onclick='submete(71)'>Último</a></li>]
+		</nav>
+		
+		
+							
+								
+<table class="table table-striped displayTagTabela" id="ResultadoConsulta">
+<thead>
+<tr>
+<th></th></tr></thead>
+<tbody>
+<tr class="displayTagLinhaBranca">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=30&amp;data=31/12/2012'> Diário Oficial da União - Seção 1 Edição nr 251 de 31/12/2012 - Pág. 30
+											</a></nav>
+										
+										
+										... os valores correspondentes aos vencimentos e vantagens atribuídos aos Planos ou Carreiras a que pertenciam com os valores referentes aos vencimentos e vantagens atribuídos aos cargos integrantes do PECFAZ."  (NR)    CAPÍTULO XII    DO PLANO ESP...
+									</td></tr>
+<tr class="displayTagLinhaAzul">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=285&amp;data=31/12/2012'> Diário Oficial da União - Seção 1 Edição nr 251 de 31/12/2012 - Pág. 285
+											</a></nav>
+										
+										
+										...    Art.  5o O conversor <font color=black><b>de</b></font> corrente contínua (CA-CC) ou carregador <font color=black><b>de</b></font> bateria, quando acompanhar o telefone celular que opera em tecnologia  digital combinada ou não com outras tecnologias,  deverá ser fabricado, conforme respectivo processo...
+									</td></tr>
+<tr class="displayTagLinhaBranca">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=286&amp;data=31/12/2012'> Diário Oficial da União - Seção 1 Edição nr 251 de 31/12/2012 - Pág. 286
+											</a></nav>
+										
+										
+										... do conversor <font color=black><b>de</b></font> corrente contínua (CA/CC) ou carregador <font color=black><b>de</b></font> bateria para telefone celular, os trans- formadores e os cabos elétricos montados com conectores, utilizados    pela empresa, no ano-calendário, deverão cumprir seus respectivos Processos Pr...
+									</td></tr>
+<tr class="displayTagLinhaAzul">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=287&amp;data=31/12/2012'> Diário Oficial da União - Seção 1 Edição nr 251 de 31/12/2012 - Pág. 287
+											</a></nav>
+										
+										
+										...  Art.  6o As unidades <font color=black><b>de</b></font> medida para o cálculo dos percentuais citados no art.  4 o deste Anexo deverão ser apresentadas em quan- tidades. Art.  7o Os transformadores elétricos e os fios e cabos <font color=black><b>de</b></font> dados deverão atender seus respectivos Processos Pr...
+									</td></tr>
+<tr class="displayTagLinhaBranca">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=288&amp;data=31/12/2012'> Diário Oficial da União - Seção 1 Edição nr 251 de 31/12/2012 - Pág. 288
+											</a></nav>
+										
+										
+										...    Art.  5o O conversor <font color=black><b>de</b></font> corrente contínua (CA-CC) ou carregador <font color=black><b>de</b></font> bateria, quando acompanhar o telefone celular que opera em tecnologia  digital combinada ou não com outras tecnologias,  deverá ser fabricado, conforme respectivo processo...
+									</td></tr>
+<tr class="displayTagLinhaAzul">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=289&amp;data=31/12/2012'> Diário Oficial da União - Seção 1 Edição nr 251 de 31/12/2012 - Pág. 289
+											</a></nav>
+										
+										
+										... fabricação do conversor <font color=black><b>de</b></font> corrente contínua (CA/CC) ou carregador <font color=black><b>de</b></font> bateria para telefone celular, os transformadores e os cabos <font color=black><b>de</b></font> dados, quando aplicáveis, utilizados pela empresa, no ano-calendário, deverão cumprir seus respectivos Processos Pr...
+									</td></tr>
+<tr class="displayTagLinhaBranca">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=295&amp;data=31/12/2012'> Diário Oficial da União - Seção 1 Edição nr 251 de 31/12/2012 - Pág. 295
+											</a></nav>
+										
+										
+										... ser verificado no endereço eletrônico http://www.in. gov.br/autenticidade.html  , pelo código 00012012123100295 Documento assinado digitalmente conforme MP no - 2.200-2 <font color=black><b>de</b></font> 24/08/2001, que institui a Infraestrutura <font color=black><b>de</b></font> Chaves Públicas Brasileira - ICP...
+									</td></tr>
+<tr class="displayTagLinhaAzul">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=2&amp;pagina=33&amp;data=31/12/2012'> Diário Oficial da União - Seção 2 Edição nr 251 de 31/12/2012 - Pág. 33
+											</a></nav>
+										
+										
+										... 101.4, para exercer o encargo <font color=black><b>de</b></font> substituto  eventual do Diretor do Departamento <font color=black><b>de</b></font> Monitoramento, DAS 101.5, da Secretaria <font color=black><b>de</b></font> Avaliação e Gestão da Informação, deste Ministério, em seus afastamentos e impedimentos legais e regulamentares.    MARCEL...
+									</td></tr>
+<tr class="displayTagLinhaBranca">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=3&amp;pagina=279&amp;data=31/12/2012'> Diário Oficial da União - Seção 3 Edição nr 251 de 31/12/2012 - Pág. 279
+											</a></nav>
+										
+										
+										... - 28/12/2012) 183023-18205-2012NE800448    RETIFICAÇÃO    No Extrato <font color=black><b>de</b></font> Contrato N o - 66/2012 publicado no D.O.U  <font color=black><b>de</b></font> 27/12/2012 , Seção 3, Pág.  131. Onde se lê: Vigência: 28/11/2012 a 26/11/2013 Leia-se : Vigência: 28/11/2012 a 26/01/2013    (SICO...
+									</td></tr>
+<tr class="displayTagLinhaAzul">
+<td>
+										
+											<nav  align='left'><a class="titulo_jornal"target='_blank'
+												href='../jsp/visualiza/index.jsp?jornal=1&amp;pagina=8&amp;data=28/12/2012'> Diário Oficial da União - Seção 1 Edição nr 250 de 28/12/2012 - Pág. 8
+											</a></nav>
+										
+										
+										... <font color=black><b>de</b></font> 1º <font color=black><b>de</b></font> janeiro a 31 <font color=black><b>de</b></font> dezembro <font color=black><b>de</b></font> 2014;    b) seis por cento no período <font color=black><b>de</b></font> 1º <font color=black><b>de</b></font> janeiro a 31 <font color=black><b>de</b></font> dezembro <font color=black><b>de</b></font> 2015; e    c) quatro por cento a partir <font color=black><b>de</b></font> 1º <font color=black><b>de</b></font> janeiro <font color=black><b>de</b></font> 2016.    § 4º O disposto no parágrafo anterior não se aplica às operações e p...
+									</td></tr></tbody></table>
+							
+		 
+		</center>		
+		</form>
+	</div>
+</body>
+</html>

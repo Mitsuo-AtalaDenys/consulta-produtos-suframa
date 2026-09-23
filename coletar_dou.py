@@ -232,6 +232,12 @@ def extrair_ementa(texto: str) -> str:
 # Ordem importa: um ato de cancelamento cita a portaria de aprovacao que
 # esta cancelando, entao os verbos mais especificos vem primeiro.
 REGRAS = [
+    # Cota de importacao NAO e aprovacao de projeto: o ato apenas amplia o
+    # limite de insumos de um produto ja aprovado antes.
+    # "cotas" e "quotas" convivem na serie: c+otas ou qu+otas
+    (r"(?:c|qu)otas?\s+de\s+importa[çc]|"
+     r"remanejamento\s+de\s+(?:c|qu)otas?|"
+     r"adicional\s+de\s+(?:c|qu)otas?", "cota de importacao"),
     (r"torna(?:r|ndo)?\s+sem\s+efeito", "tornado sem efeito"),
     (r"\bcancel", "cancelamento"),
     (r"\brevog", "revogacao"),
@@ -274,6 +280,10 @@ def eh_ato_de_projeto(texto: str) -> bool:
 
 def classificar(texto: str) -> str:
     """Classifica o ato pelo que ele faz com o projeto."""
+    inicio = sem_acento(texto[:120]).lower()
+    if "portaria de pessoal" in inicio:
+        return "normativo/administrativo"
+
     ementa_bruta = sem_acento(extrair_ementa(texto)).lower()
     # Ato normativo que apenas regula procedimentos nao e cancelamento,
     # ainda que a palavra apareca na ementa.
@@ -287,15 +297,22 @@ def classificar(texto: str) -> str:
                 return rotulo
 
     # 2) Sem ementa util, olhar o dispositivo do Art. 1º
-    m = re.search(r"Art\.\s*1[º°o]?\s*(.{0,180})", texto, re.I | re.S)
+    # O "(?!\d)" impede casar com "Art. 12" do preambulo ("considerando
+    # o que lhe autoriza o Art. 12, Inciso I"): sem ele, a regra lia o
+    # trecho errado e o ato caia em "outro".
+    m = re.search(r"Art\.?\s*1\s*[º°o]?(?!\d)\s*[-.]?\s*(.{0,180})",
+                  texto, re.I | re.S)
     if m:
         disp = sem_acento(m.group(1)).lower()
         for padrao, rotulo in REGRAS:
             if re.search(padrao, disp):
                 return rotulo
 
-    # 3) Ultimo recurso: inicio do texto
-    ini = sem_acento(texto[:300]).lower()
+    # 3) Ultimo recurso: so o verbo que abre o ato, sem o preambulo. Usar
+    # 300 caracteres pegava "aprovada pelo Conselho de Administracao" e
+    # classificava como aprovacao atos que nada aprovam.
+    ini = sem_acento(texto[:160]).lower()
+    ini = re.split(r"\bo\s+superintendente\b", ini)[0]
     for padrao, rotulo in REGRAS:
         if re.search(padrao, ini):
             return rotulo
@@ -325,47 +342,94 @@ def extrair_campos(texto: str) -> dict:
                 d["tipo_projeto"] = rotulo
                 break
 
-    # Empresa. O "(?!empresa)" garante que a captura comece na ocorrencia
-    # MAIS PROXIMA de "inscrita no CNPJ" — sem isso, a ementa no inicio do
-    # ato faz a regex engolir o preambulo inteiro.
-    m = re.search(r"empres(?:[aá]ri[ao]|a)\s+((?:(?!\bempres(?:[aá]ri[ao]|a)\b).)+?)"
-                  r",?\s*inscrita\s+no\s+CNPJ", texto, re.I)
-    if not m:
-        m = re.search(r"empres(?:[aá]ri[ao]|a)\s+((?:(?!\bempres(?:[aá]ri[ao]|a)\b).)+?)"
-                      r",?\s*(?:estabelecida|inscrit|CNPJ)", texto, re.I)
-    if not m:
-        m = re.search(r"d[ao]\s+empresa\s+([A-ZÀ-Ý][^.;]{3,90}?)(?:,\s*inscrit|\.\s|;)", texto)
-    if m:
-        d["empresa"] = re.sub(r"\s+", " ", m.group(1)).strip(" ,.")
+    # Empresa. Duas redacoes convivem na serie:
+    #   2016-2021: "da empresa X (CNPJ: ... e Inscricao SUFRAMA: ...)"
+    #   2025-2026: "da empresa X, inscrita no CNPJ sob o no ..."
+    # O "(?!empresa)" impede que a captura comece na ementa do inicio do
+    # ato e engula o preambulo inteiro.
+    SEM_EMPRESA = r"(?:(?!\bempres(?:[aá]ri[ao]|a)\b).)+?"
+    for padrao in (
+        # formato antigo: nome termina no parentese do CNPJ
+        r"d[ao]\s+empresa\s+(" + SEM_EMPRESA + r")\s*\(\s*(?:CNPJ|Inscri)",
+        # "da empresa X, CNPJ Nº 11.425.472/0001-02"
+        r"d[ao]\s+empresa\s+(" + SEM_EMPRESA + r"),\s*CNPJ",
+        # "da empresa, AUTCOM ENGENHARIA LTDA, na Zona Franca"
+        r"d[ao]\s+empresa,?\s+(" + SEM_EMPRESA +
+        r"),?\s*n[ao]\s+Zona\s+Franca",
+        r"em\s+nome\s+d[ao]\s+empresa\s+(" + SEM_EMPRESA +
+        r"),?\s*com\s+Inscri[çc][ãa]o",
+        # formato atual
+        r"empres(?:[aá]ri[ao]|a)\s+(" + SEM_EMPRESA +
+        r"),?\s*inscrita\s+no\s+CNPJ",
+        r"empres(?:[aá]ri[ao]|a)\s+(" + SEM_EMPRESA +
+        r"),?\s*(?:estabelecida|inscrit)",
+        # projeto agropecuario: pessoa fisica, nao empresa
+        r"de\s+interesse\s+d[eo]\s+(.{4,80}?)\s*\(\s*CPF",
+        r"d[ao]\s+empresa\s+([A-ZÀ-Ý][^.;]{3,90}?)(?:,\s*inscrit|\.\s|;)",
+    ):
+        m = re.search(padrao, texto, re.I)
+        if m:
+            cand = re.sub(r"\s+", " ", m.group(1)).strip(" ,.(")
+            if 3 < len(cand) < 120:
+                d["empresa"] = cand
+                break
 
     m = re.search(r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}", texto)
     if m:
         d["cnpj"] = m.group(0)
 
-    m = re.search(r"SUFRAMA\s+sob\s+o\s+n[º°.\s]*([\d.\-/]+)", texto, re.I)
-    if m:
-        d["inscricao_suframa"] = m.group(1).strip(" .")
+    # Inscricao SUFRAMA: "sob o no X" (atual) ou "Inscricao SUFRAMA: X"
+    for padrao in (
+        r"Inscri[çc][ãa]o\s+SUFRAMA:?\s*n?[º°.\s]*([\d.\-]{6,20})",
+        r"SUFRAMA\s+sob\s+o\s+n[º°.\s]*([\d.\-/]{6,20})",
+    ):
+        m = re.search(padrao, texto, re.I)
+        if m:
+            d["inscricao_suframa"] = m.group(1).strip(" .")
+            break
 
-    m = re.search(r"c[óo]digo\s+SUFRAMA\s*n?[º°.\s]*(\d{3,4})", texto, re.I)
+    # Codigo do produto: "codigo SUFRAMA 1306" ou "Cod. Suframa 0399"
+    m = re.search(r"\(?\s*c[óo]d(?:igo|\.)?\s*SUFRAMA\s*n?[º°.:\s]*(\d{3,4})",
+                  texto, re.I)
     if m:
         d["codigo_produto"] = m.group(1).zfill(4)
 
-    # Produto: varias redacoes convivem no mesmo periodo — "na Zona Franca
-    # de Manaus, de X", "para producao de X", "fabricacao de X". Todas
-    # fecham em ", codigo SUFRAMA", que serve de ancora a direita.
-    LIXO = re.compile(r"Art\.\s*\d|Fica(?:m)?\s+aprovad|Parecer|Resolu[çc][ãa]o|"
-                      r"N[º°o]\s*\d+\s*[-–]", re.I)
+    # Tipo de projeto. Na redacao antiga vem como "projeto industrial de
+    # IMPLANTACAO"; na atual, "do tipo diversificacao".
+    escopo = sem_acento(extrair_ementa(texto) + " " + texto[:1500]).lower()
+    m = re.search(r"projeto\s+(?:industrial|agropecuario|t[eé]cnico)"
+                  r"[\w\s-]{0,20}?\s+de\s+([a-z]{5,18})(?:\s*/\s*[a-z]+)?",
+                  escopo)
+    if not m:
+        m = re.search(r"do\s+tipo\s+([a-z\s/-]{4,30}?)\s*[,.]", escopo)
+    if m:
+        bruto = m.group(1).strip()
+        for radical, rotulo in TIPOS_PROJETO.items():
+            if radical in bruto:
+                d["tipo_projeto"] = rotulo
+                break
+    if not d["tipo_projeto"]:
+        for radical, rotulo in TIPOS_PROJETO.items():
+            if re.search(r"projeto[^.]{0,40}\b" + radical, escopo):
+                d["tipo_projeto"] = rotulo
+                break
+
+    # Produto: varias redacoes, todas fechando em ", codigo SUFRAMA"
+    LIXO = re.compile(r"Art\.\s*\d|Fica(?:m)?\s+aprovad|Parecer|"
+                      r"Resolu[çc][ãa]o|N[º°o]\s*\d+\s*[-–]", re.I)
     for padrao in (
-        r"Zona\s+Franca\s+de\s+Manaus,?\s*d[eo]\s+(.+?),\s*c[óo]digo\s+SUFRAMA",
-        r"produ[çc][ãa]o\s+d[eo]\s+(.+?),\s*c[óo]digo\s+SUFRAMA",
-        r"fabrica[çc][ãa]o\s+d[eo]\s+(.+?),\s*c[óo]digo\s+SUFRAMA",
-        r"[,;]\s*d[eo]\s+([^,;]{4,160}?),\s*c[óo]digo\s+SUFRAMA",
+        # 2018: "para producao de X (Codigo SUFRAMA: 0665)"
+        r"produ[çc][ãa]o\s+d[eo]\s+(.+?)\s*\(\s*c[óo]d\w*\s+SUFRAMA",
+        r"Zona\s+Franca\s+de\s+Manaus,?\s*d[eo]\s+(.+?),\s*c[óo]d\w*\s+SUFRAMA",
+        r"produ[çc][ãa]o\s+d[eo]\s+(.+?),\s*c[óo]d\w*\s+SUFRAMA",
+        r"fabrica[çc][ãa]o\s+d[eo]\s+(.+?)[,(]\s*c[óo]d\w*\s+SUFRAMA",
+        r"produto\s+(.+?)\s*[-–]\s*C[óo]d\.?\s*Suframa",
+        r"[,;]\s*d[eo]\s+([^,;]{4,160}?),\s*c[óo]d\w*\s+SUFRAMA",
     ):
         m = re.search(padrao, texto, re.I)
         if not m:
             continue
         cand = re.sub(r"\s+", " ", m.group(1)).strip(" ,.")
-        # Descarta captura que atravessou a fronteira do item anterior
         if LIXO.search(cand) or len(cand) > 170:
             continue
         d["produto"] = cand
@@ -434,8 +498,104 @@ def dividir_blocos(texto: str) -> list:
     return blocos
 
 
+def extrair_anexo_cancelamento(texto: str) -> list:
+    """Extrai empresa e produtos dos anexos de cancelamento automatico.
+
+    As portarias de cancelamento em lote (arts. 46 e 47 da Resolucao
+    204/2019) nao citam empresas no corpo: publicam a relacao em anexo,
+    que vem embutido no texto no formato
+
+        ANEXO I - ... Inscricao SUFRAMA: 200104080
+        Razao Social: ARRIS INDUSTRIA ELETRONICA DO BRASIL LTDA.
+        Codigo Produto Nro.Doc. Tipo Doc. Data Doc. Tipo Projeto
+        1311 MODULADOR/DEMODULADOR PARA COMUNICACAO DE DADOS ...
+
+    Sem isso, um unico ato que cancela dezenas de produtos vira um
+    registro vazio.
+    """
+    cabecalhos = list(re.finditer(
+        r"Inscri[çc][ãa]o\s+SUFRAMA:?\s*([\d.\-]{6,20})\s*"
+        r"Raz[ãa]o\s+Social:?\s*(.+?)\s*C[óo]digo\s+Produto",
+        texto, re.I))
+    if not cabecalhos:
+        return []
+
+    # Motivo do cancelamento, quando o anexo o identifica
+    def motivo(trecho):
+        if re.search(r"Art\.?\s*n?[º°]?\s*46", trecho, re.I):
+            return "art. 46 - LP nao emitido em 36 meses"
+        if re.search(r"Art\.?\s*n?[º°]?\s*47", trecho, re.I):
+            return "art. 47 - producao paralisada 36 meses"
+        return ""
+
+    registros = []
+    for i, cab in enumerate(cabecalhos):
+        inscricao = cab.group(1).strip(" .")
+        empresa = re.sub(r"\s+", " ", cab.group(2)).strip(" ,.")
+        ini = cab.end()
+        fim = (cabecalhos[i + 1].start() if i + 1 < len(cabecalhos)
+               else len(texto))
+        bloco = texto[ini:fim]
+
+        # Contexto anterior indica em qual anexo (art. 46 ou 47) o bloco esta
+        contexto = texto[max(0, cab.start() - 400):cab.start()]
+        mot = motivo(contexto) or motivo(bloco[:200])
+
+        # Linhas do anexo, no formato:
+        #   codigo | descricao | Nro.Doc | Tipo Doc | Data | Tipo Projeto
+        # A ancora e a DATA, nao o primeiro digito: nomes de produto contem
+        # numeros ("MOTONETA ACIMA DE 100 CM3 ATE 450 CM3") e cortar no
+        # primeiro digito truncaria a descricao.
+        linhas = list(re.finditer(
+            r"(?<![/\d])\b(\d{4})\s+(.+?)\s+(\d{1,7})\s+([A-Z]{2,5})\s+"
+            r"(\d{2}/\d{2}/\d{4})", bloco))
+
+        if not linhas:
+            # Anexo sem a coluna de data: volta ao corte conservador
+            linhas = list(re.finditer(
+                r"(?<![/\d])\b(\d{4})\s+([A-ZÀ-Ý][^\d]{4,120}?)\s+(?=\d)",
+                bloco))
+
+        TIPOS = ("DIVERSIFICACAO", "IMPLANTACAO", "AMPLIACAO", "ATUALIZACAO",
+                 "MODERNIZACAO", "ADAPTACAO", "SUBSTITUICAO")
+        for lin in linhas:
+            desc = re.sub(r"\s+", " ", lin.group(2)).strip(" ,.-")
+            primeira = sem_acento(desc).upper().split(" ")[0]
+            if primeira in TIPOS or desc.upper().startswith("ANEXO"):
+                continue
+            reg = {
+                "empresa": empresa,
+                "inscricao_suframa": inscricao,
+                "codigo_produto": lin.group(1).zfill(4),
+                "produto": desc,
+                "tipo_projeto": "",
+                "processo": "",
+                "motivo": mot,
+            }
+            if lin.lastindex and lin.lastindex >= 5:
+                reg["data_documento"] = lin.group(5)
+                reg["tipo_documento"] = lin.group(4)
+            registros.append(reg)
+
+    return registros
+
+
 def extrair_multiplos(texto: str) -> list:
     """Um registro por projeto, com o texto do proprio bloco em cada um."""
+    # Cancelamento em lote: a informacao esta no anexo, nao no corpo
+    anexo = extrair_anexo_cancelamento(texto)
+    if anexo:
+        base = extrair_campos(texto)
+        saida = []
+        for reg in anexo:
+            d = dict(base)
+            d.update({k: v for k, v in reg.items() if k != "motivo"})
+            d["texto_item"] = (f"{reg['empresa']} | {reg['codigo_produto']} | "
+                               f"{reg['produto']} | {reg.get('motivo', '')}")
+            d["tem_anexo"] = "SIM"
+            saida.append(d)
+        return saida
+
     blocos = dividir_blocos(texto)
     if len(blocos) <= 1:
         d = extrair_campos(texto)
