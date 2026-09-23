@@ -23,6 +23,9 @@ USO
   python coletar_silt.py --de 2023 --ate 2026
   python coletar_silt.py --teste-url <url>  # testa a extracao de um decreto
   python coletar_silt.py --reiniciar        # ignora o cache e recomeca
+  python coletar_silt.py --reprocessar      # reclassifica/reextrai sem rede,
+                                             # usando o texto ja salvo no
+                                             # cache (dados/_parcial_silt.csv)
 
 Requer: requests, beautifulsoup4, lxml, pandas, pyarrow
 """
@@ -211,6 +214,79 @@ def data_por_extenso(txt: str) -> str:
     return f"{int(m.group(1)):02d}/{mes:02d}/{m.group(3)}"
 
 
+# --- Produto / NCM ---------------------------------------------------------
+# Padrao de codigo NCM: "1234.56.78" ou, sem pontuacao, 8 digitos seguidos.
+NCM_COD_RE = re.compile(r"\d{4}\.\d{2}\.\d{2}|\d{8}")
+
+# Marcador de item em lista numerada: "I -", "II.", "III –", etc.
+MARCADOR_RE = re.compile(r"[IVXLCDM]{1,6}\s*[-–.)]\s*")
+
+
+def extrair_produto_ncm(texto: str):
+    """Extrai produto(s) e NCM/SH do texto do decreto.
+
+    Cobre dois formatos que aparecem no SILT:
+
+    1) Produto unico:
+       "...fabricacao do produto BISCOITO, NCM/SH: 1905.31.00..."
+
+    2) Lista numerada de produtos, cada um com seu proprio NCM/SH:
+       "...fabricacao dos produtos a seguir relacionados: I - CIMENTO
+        NCM/SH: 2523.29.10 II - ARGAMASSA NCM/SH: 3214.10.10..."
+
+    Retorna (produto, ncms) ja formatados para as colunas do CSV:
+    produtos separados por " | " quando ha mais de um, NCMs unicos
+    (sem repeticao) separados por ", ".
+    """
+    m_ini = re.search(r"fabrica[çc][ãa]o\s+d[eo]s?\s+produtos?\b", texto, re.I)
+    if not m_ini:
+        return "", ""
+
+    trecho = texto[m_ini.end():]
+
+    # limite logico do trecho de produtos: para antes do proximo assunto
+    # do decreto (enquadramento, resolucao do CODAM, etc.)
+    m_fim = re.search(
+        r"\benquadrad|\bResolu[çc][ãa]o\s+n[.º°\s]*[\d./-]+\s*-?\s*CODAM"
+        r"|\bcr[ée]dito\s+est[íi]mulo\b",
+        trecho, re.I,
+    )
+    if m_fim:
+        trecho = trecho[:m_fim.start()]
+
+    itens = MARCADOR_RE.split(trecho)
+    marcadores = MARCADOR_RE.findall(trecho)
+
+    produtos, ncms_todos = [], []
+
+    if marcadores:
+        # itens[0] e o texto antes do primeiro "I -" (normalmente so
+        # "a seguir relacionados:"), descartar; os itens seguintes
+        # correspondem 1-a-1 com os marcadores encontrados.
+        partes = itens[1:]
+        for parte in partes:
+            mm = re.search(r"NCM/?\s*SH:?\s*(.+)$", parte, re.I)
+            if not mm:
+                continue
+            nome = limpar(parte[:mm.start()]).strip(" ,.:;-")
+            codigos = NCM_COD_RE.findall(mm.group(1))
+            if nome:
+                produtos.append(nome)
+            ncms_todos.extend(codigos)
+    else:
+        # produto unico, sem marcador de lista
+        mm = re.search(r"NCM/?\s*SH:?\s*(.+)$", trecho, re.I)
+        if mm:
+            nome = limpar(trecho[:mm.start()]).strip(" ,.:;-")
+            codigos = NCM_COD_RE.findall(mm.group(1))
+            if nome:
+                produtos.append(nome)
+            ncms_todos.extend(codigos)
+
+    ncms_unicos = list(dict.fromkeys(ncms_todos))
+    return " | ".join(produtos), ", ".join(ncms_unicos)
+
+
 def extrair_campos(texto: str) -> dict:
     d = {c: "" for c in COLUNAS}
 
@@ -225,10 +301,21 @@ def extrair_campos(texto: str) -> dict:
         d["data_publicacao_doe"] = m.group(1)
 
     # Empresa
-    # O "(?!empresaria)" faz a captura comecar na ocorrencia mais proxima
-    # de "estabelecida" — sem isso a ementa inicial e engolida junto.
-    m = re.search(r"empres[aá]ria\s+((?:(?!empres[aá]ria).)+?),?\s*estabelecida",
-                  texto, re.I)
+    # Para de capturar tanto em "estabelecida" quanto em "inscrita", pois
+    # alguns decretos vao direto para "inscrita no CNPJ" sem o trecho
+    # "estabelecida em ...".
+    m = re.search(
+        r"empres[aá]ria\s+((?:(?!empres[aá]ria|estabelecida|inscrita).)+?)"
+        r"\s*,?\s*(?:estabelecida|inscrita)",
+        texto, re.I,
+    )
+    if not m:
+        # fallback: "a empresa NOME, estabelecida/inscrita..."
+        m = re.search(
+            r"\bempresa\s+((?:(?!estabelecida|inscrita).)+?)"
+            r"\s*,?\s*(?:estabelecida|inscrita)",
+            texto, re.I,
+        )
     if not m:
         m = re.search(r"empres[aá]ria\s+([A-ZÀ-Ý][^.]{3,90}?)\.", texto)
     if m:
@@ -239,29 +326,27 @@ def extrair_campos(texto: str) -> dict:
     if m:
         d["endereco"] = limpar(m.group(1)).strip(" ,.")
 
-    m = re.search(r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}", texto)
+    # CNPJ
+    # Tolerante a espacos extras ao redor da pontuacao, que podem surgir
+    # quando o numero vem quebrado por tags no HTML original.
+    m = re.search(
+        r"\d{2}\s*\.\s*\d{3}\s*\.\s*\d{3}\s*/\s*\d{4}\s*-\s*\d{2}", texto
+    )
     if m:
-        d["cnpj"] = m.group(0)
+        d["cnpj"] = re.sub(r"\s+", "", m.group(0))
 
     m = re.search(r"CCA\s+sob\s+o\s+n[.º°\s]*([\d.\-]+)", texto, re.I)
     if m:
         d["cca"] = m.group(1).strip(" .")
 
-    # Produto e NCMs
-    m = re.search(r"fabrica[çc][ãa]o\s+d[eo]s?\s+produtos?\s+(.+?),\s*NCM",
-                  texto, re.I)
-    if m:
-        d["produto"] = limpar(m.group(1)).strip(" ,.")
+    # Produto e NCM/SH (produto unico ou lista numerada I, II, III...)
+    produto, ncms = extrair_produto_ncm(texto)
+    d["produto"] = produto
+    d["ncms"] = ncms
 
-    m = re.search(r"NCM/SH:?\s*([\d.,\s]+(?:\s*e\s*[\d.]+)?)", texto, re.I)
-    if m:
-        brutos = re.findall(r"\d{4}\.\d{2}\.\d{2}|\d{8}", m.group(1))
-        d["ncms"] = ", ".join(dict.fromkeys(brutos))
-
-    m = re.search(r"cr[ée]dito\s+est[íi]mulo\s+do\s+ICMS\s+de\s+(\d+)\s*%",
-                  texto, re.I)
-    if m:
-        d["credito_estimulo"] = m.group(1) + "%"
+    # Credito estimulo do ICMS: sem informacao segura de formato ainda,
+    # deixado em branco por enquanto (nao extrair).
+    d["credito_estimulo"] = ""
 
     m = re.search(r"enquadrado\s+como\s+(.+?),?\s*conforme", texto, re.I)
     if m:
@@ -342,6 +427,8 @@ def consolidar():
     print("\n  --- Consolidacao ---")
     print(f"  Decretos:      {len(df)}")
     print(f"  Com empresa:   {(df['empresa'] != '').sum()}")
+    print(f"  Com CNPJ:      {(df['cnpj'] != '').sum()}")
+    print(f"  Com produto:   {(df['produto'] != '').sum()}")
     print(f"  Com NCM:       {(df['ncms'] != '').sum()}")
     print("  Por classificacao:")
     for k, v in df["classificacao"].value_counts().items():
@@ -413,6 +500,8 @@ def reprocessar():
             continue
         df.at[i, "classificacao"] = classificar(texto)
         for k, v in extrair_campos(texto).items():
+            if k == "credito_estimulo":
+                continue  # mantido em branco de proposito
             if v:
                 df.at[i, k] = v
     df.to_csv(ARQ_PARCIAL, index=False, encoding="utf-8")
